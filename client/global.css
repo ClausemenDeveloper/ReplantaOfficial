@@ -1,0 +1,131 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /**
+   * Tailwind CSS theme
+   * tailwind.config.ts expects the following color variables to be expressed as HSL values.
+   * A different format will require also updating the theme in tailwind.config.ts.
+  */
+  :root {
+    --background: 120 25% 98%;
+    --foreground: 120 25% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 120 25% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 120 25% 15%;
+
+    --primary: 120 25% 25%;
+    --primary-foreground: 120 25% 98%;
+
+    --secondary: 120 30% 92%;
+    --secondary-foreground: 120 25% 25%;
+
+    --muted: 120 20% 94%;
+    --muted-foreground: 120 15% 45%;
+
+    --accent: 197 71% 73%;
+    --accent-foreground: 120 25% 15%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 25 40% 85%;
+    --input: 25 40% 85%;
+    --ring: 120 25% 25%;
+
+    --radius: 0.75rem;
+
+    --sidebar-background: 0 0% 98%;
+
+    --sidebar-foreground: 240 5.3% 26.1%;
+
+    --sidebar-primary: 240 5.9% 10%;
+
+    --sidebar-primary-foreground: 0 0% 98%;
+
+    --sidebar-accent: 240 4.8% 95.9%;
+
+    --sidebar-accent-foreground: 240 5.9% 10%;
+
+    --sidebar-border: 220 13% 91%;
+
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: 120 25% 8%;
+    --foreground: 120 25% 90%;
+
+    --card: 120 25% 10%;
+    --card-foreground: 120 25% 90%;
+
+    --popover: 120 25% 10%;
+    --popover-foreground: 120 25% 90%;
+
+    --primary: 120 30% 75%;
+    --primary-foreground: 120 25% 8%;
+
+    --secondary: 120 15% 15%;
+    --secondary-foreground: 120 25% 90%;
+
+    --muted: 120 15% 15%;
+    --muted-foreground: 120 15% 65%;
+
+    --accent: 197 71% 45%;
+    --accent-foreground: 120 25% 90%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 25 30% 25%;
+    --input: 25 30% 25%;
+    --ring: 120 30% 75%;
+    --sidebar-background: 120 25% 8%;
+    --sidebar-foreground: 120 25% 90%;
+    --sidebar-primary: 120 30% 75%;
+    --sidebar-primary-foreground: 120 25% 8%;
+    --sidebar-accent: 120 15% 15%;
+    --sidebar-accent-foreground: 120 25% 90%;
+    --sidebar-border: 25 30% 25%;
+    --sidebar-ring: 120 30% 75%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    background: linear-gradient(
+      135deg,
+      hsl(var(--background)) 0%,
+      hsl(120 30% 96%) 100%
+    );
+    min-height: 100vh;
+  }
+
+  .garden-gradient {
+    background: linear-gradient(135deg, #8fbc8f 0%, #87ceeb 50%, #2f4f2f 100%);
+  }
+
+  .garden-card {
+    @apply bg-card border border-garden-brown/20 rounded-xl shadow-lg;
+    box-shadow: 0 10px 25px rgba(139, 69, 19, 0.1);
+  }
+
+  .garden-button {
+    @apply bg-garden-green text-white px-6 py-3 rounded-lg font-medium transition-all duration-200;
+    box-shadow: 0 4px 12px rgba(47, 79, 47, 0.3);
+  }
+
+  .garden-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(47, 79, 47, 0.4);
+  }
+}
