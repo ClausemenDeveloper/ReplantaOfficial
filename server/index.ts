@@ -1,6 +1,6 @@
 import express from "express";
 import cors from "cors";
-import { handleDemo } from "./routes/demo";
+import { handleDemo } from "./routes/demo.js";
 
 // Dynamic imports for MongoDB routes to avoid startup issues
 let databaseService: any = null;
