@@ -1,0 +1,420 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* PWA and Mobile Optimizations */
+@layer base {
+  html {
+    /* Prevent zoom on iOS when focusing inputs */
+    font-size: 16px;
+    -webkit-text-size-adjust: 100%;
+    -ms-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  body {
+    /* Smooth scrolling */
+    -webkit-overflow-scrolling: touch;
+    /* Prevent selection on mobile */
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    /* Prevent callouts on mobile */
+    -webkit-touch-callout: none;
+    /* Prevent highlight on tap */
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Allow text selection for specific elements */
+  input,
+  textarea,
+  [contenteditable],
+  .selectable {
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    user-select: text;
+  }
+
+  /* Safe area support for iOS */
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .safe-area-left {
+    padding-left: env(safe-area-inset-left);
+  }
+
+  .safe-area-right {
+    padding-right: env(safe-area-inset-right);
+  }
+
+  .safe-area-all {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+}
+
+/* Mobile-specific utilities */
+@layer utilities {
+  /* Touch optimizations */
+  .touch-action-manipulation {
+    touch-action: manipulation;
+  }
+
+  .touch-action-none {
+    touch-action: none;
+  }
+
+  /* Hide scrollbars */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* iOS momentum scrolling */
+  .momentum-scroll {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Prevent iOS bounce scroll */
+  .no-bounce {
+    overscroll-behavior: none;
+  }
+
+  /* Mobile tap target sizes */
+  .tap-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Mobile button styles */
+  .mobile-button {
+    @apply tap-target touch-action-manipulation select-none;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  /* Mobile input styles */
+  .mobile-input {
+    @apply text-base; /* Prevent zoom on iOS */
+    -webkit-appearance: none;
+    appearance: none;
+    border-radius: 8px;
+  }
+
+  /* PWA display modes */
+  @media (display-mode: standalone) {
+    .pwa-only {
+      display: block !important;
+    }
+
+    .web-only {
+      display: none !important;
+    }
+  }
+
+  @media not (display-mode: standalone) {
+    .pwa-only {
+      display: none !important;
+    }
+  }
+}
+
+/* Platform-specific styles */
+@layer components {
+  /* Mobile navigation */
+  .mobile-nav {
+    @apply fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* Mobile header */
+  .mobile-header {
+    @apply fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200;
+    padding-top: env(safe-area-inset-top);
+  }
+
+  /* Card optimizations for mobile */
+  .mobile-card {
+    @apply rounded-lg bg-white shadow-sm border border-gray-200 p-4;
+    /* Optimize for touch */
+    touch-action: manipulation;
+  }
+
+  /* Loading spinner */
+  .spinner {
+    @apply animate-spin rounded-full border-4 border-gray-200 border-t-garden-green;
+  }
+
+  /* Mobile-optimized button */
+  .btn-mobile {
+    @apply mobile-button rounded-lg font-medium transition-all duration-200;
+    @apply px-6 py-3 text-base;
+    /* Active state */
+    @apply active:scale-95 active:shadow-sm;
+  }
+
+  .btn-mobile-primary {
+    @apply btn-mobile bg-garden-green text-white;
+    @apply hover:bg-garden-green-dark active:bg-garden-green-dark;
+  }
+
+  .btn-mobile-secondary {
+    @apply btn-mobile bg-gray-100 text-gray-900;
+    @apply hover:bg-gray-200 active:bg-gray-200;
+  }
+
+  .btn-mobile-outline {
+    @apply btn-mobile border-2 border-garden-green text-garden-green;
+    @apply hover:bg-garden-green hover:text-white;
+  }
+
+  /* Mobile form styles */
+  .form-mobile {
+    @apply space-y-4;
+  }
+
+  .input-mobile {
+    @apply mobile-input w-full px-4 py-3 border border-gray-300 rounded-lg;
+    @apply focus:border-garden-green focus:ring-2 focus:ring-garden-green/20;
+    @apply transition-colors duration-200;
+  }
+
+  .label-mobile {
+    @apply block text-sm font-medium text-gray-700 mb-1;
+  }
+
+  /* Garden theme colors */
+  .garden-gradient {
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+  }
+
+  .garden-card {
+    @apply bg-white border border-garden-green/10 rounded-lg shadow-sm;
+  }
+}
+
+/* Responsive breakpoints for mobile-first design */
+@layer utilities {
+  /* Custom mobile breakpoints */
+  @media (max-width: 374px) {
+    .xs\:text-sm {
+      font-size: 0.875rem;
+    }
+    .xs\:p-2 {
+      padding: 0.5rem;
+    }
+    .xs\:space-y-2 > * + * {
+      margin-top: 0.5rem;
+    }
+  }
+
+  @media (min-width: 375px) and (max-width: 414px) {
+    .mobile-m\:text-base {
+      font-size: 1rem;
+    }
+    .mobile-m\:p-3 {
+      padding: 0.75rem;
+    }
+  }
+
+  @media (min-width: 414px) and (max-width: 767px) {
+    .mobile-l\:text-lg {
+      font-size: 1.125rem;
+    }
+    .mobile-l\:p-4 {
+      padding: 1rem;
+    }
+  }
+}
+
+/* Dark mode support for mobile devices */
+@media (prefers-color-scheme: dark) {
+  .dark-mode-auto {
+    @apply bg-gray-900 text-white;
+  }
+
+  .dark-mode-auto .garden-card {
+    @apply bg-gray-800 border-gray-700;
+  }
+
+  .dark-mode-auto .mobile-nav,
+  .dark-mode-auto .mobile-header {
+    @apply bg-gray-900 border-gray-700;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .btn-mobile-primary {
+    @apply border-2 border-white;
+  }
+
+  .input-mobile {
+    @apply border-2 border-gray-600;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .mobile-button,
+  .btn-mobile {
+    @apply transition-none;
+  }
+
+  .spinner {
+    @apply animate-none;
+  }
+}
+
+/* Print styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  .mobile-nav,
+  .mobile-header {
+    display: none !important;
+  }
+}
+
+@layer base {
+  /**
+   * Tailwind CSS theme
+   * tailwind.config.ts expects the following color variables to be expressed as HSL values.
+   * A different format will require also updating the theme in tailwind.config.ts.
+  */
+  :root {
+    --background: 120 25% 98%;
+    --foreground: 120 25% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 120 25% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 120 25% 15%;
+
+    --primary: 120 25% 25%;
+    --primary-foreground: 120 25% 98%;
+
+    --secondary: 120 30% 92%;
+    --secondary-foreground: 120 25% 25%;
+
+    --muted: 120 20% 94%;
+    --muted-foreground: 120 15% 45%;
+
+    --accent: 197 71% 73%;
+    --accent-foreground: 120 25% 15%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 25 40% 85%;
+    --input: 25 40% 85%;
+    --ring: 120 25% 25%;
+
+    --radius: 0.75rem;
+
+    --sidebar-background: 0 0% 98%;
+
+    --sidebar-foreground: 240 5.3% 26.1%;
+
+    --sidebar-primary: 240 5.9% 10%;
+
+    --sidebar-primary-foreground: 0 0% 98%;
+
+    --sidebar-accent: 240 4.8% 95.9%;
+
+    --sidebar-accent-foreground: 240 5.9% 10%;
+
+    --sidebar-border: 220 13% 91%;
+
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: 120 25% 8%;
+    --foreground: 120 25% 90%;
+
+    --card: 120 25% 10%;
+    --card-foreground: 120 25% 90%;
+
+    --popover: 120 25% 10%;
+    --popover-foreground: 120 25% 90%;
+
+    --primary: 120 30% 75%;
+    --primary-foreground: 120 25% 8%;
+
+    --secondary: 120 15% 15%;
+    --secondary-foreground: 120 25% 90%;
+
+    --muted: 120 15% 15%;
+    --muted-foreground: 120 15% 65%;
+
+    --accent: 197 71% 45%;
+    --accent-foreground: 120 25% 90%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 25 30% 25%;
+    --input: 25 30% 25%;
+    --ring: 120 30% 75%;
+    --sidebar-background: 120 25% 8%;
+    --sidebar-foreground: 120 25% 90%;
+    --sidebar-primary: 120 30% 75%;
+    --sidebar-primary-foreground: 120 25% 8%;
+    --sidebar-accent: 120 15% 15%;
+    --sidebar-accent-foreground: 120 25% 90%;
+    --sidebar-border: 25 30% 25%;
+    --sidebar-ring: 120 30% 75%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    background: linear-gradient(
+      135deg,
+      hsl(var(--background)) 0%,
+      hsl(120 30% 96%) 100%
+    );
+    min-height: 100vh;
+  }
+
+  .garden-gradient {
+    background: linear-gradient(135deg, #8fbc8f 0%, #87ceeb 50%, #2f4f2f 100%);
+  }
+
+  .garden-card {
+    @apply bg-card border border-garden-brown/20 rounded-xl shadow-lg;
+    box-shadow: 0 10px 25px rgba(139, 69, 19, 0.1);
+  }
+
+  .garden-button {
+    @apply bg-garden-green text-white px-6 py-3 rounded-lg font-medium transition-all duration-200;
+    box-shadow: 0 4px 12px rgba(47, 79, 47, 0.3);
+  }
+
+  .garden-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(47, 79, 47, 0.4);
+  }
+}

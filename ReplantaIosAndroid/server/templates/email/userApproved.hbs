@@ -1,0 +1,246 @@
+<html lang="pt">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Conta Aprovada - ReplantaSystem</title>
+    <style>
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        line-height: 1.6;
+        color: #333;
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f8fffe;
+      }
+      .header {
+        background: linear-gradient(135deg, #4ade80, #22c55e);
+        color: white;
+        padding: 30px;
+        text-align: center;
+        border-radius: 10px 10px 0 0;
+      }
+      .header h1 {
+        margin: 0;
+        font-size: 28px;
+        font-weight: 600;
+      }
+      .header .icon {
+        font-size: 48px;
+        margin-bottom: 10px;
+      }
+      .content {
+        background: white;
+        padding: 30px;
+        border-radius: 0 0 10px 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+      .success-badge {
+        background: #dcfce7;
+        color: #15803d;
+        padding: 10px 20px;
+        border-radius: 20px;
+        font-weight: 600;
+        display: inline-block;
+        margin: 20px 0;
+        border: 1px solid #bbf7d0;
+      }
+      .info-card {
+        background: #f0f9ff;
+        border-left: 4px solid #3b82f6;
+        padding: 20px;
+        margin: 20px 0;
+        border-radius: 0 8px 8px 0;
+      }
+      .info-card h3 {
+        margin: 0 0 10px 0;
+        color: #1e40af;
+        font-size: 18px;
+      }
+      .info-row {
+        display: flex;
+        justify-content: space-between;
+        margin: 8px 0;
+        padding: 5px 0;
+        border-bottom: 1px solid #e0f2fe;
+      }
+      .info-row:last-child {
+        border-bottom: none;
+      }
+      .info-label {
+        font-weight: 600;
+        color: #475569;
+      }
+      .info-value {
+        color: #1e293b;
+      }
+      .cta-buttons {
+        text-align: center;
+        margin: 30px 0;
+      }
+      .btn {
+        display: inline-block;
+        padding: 12px 30px;
+        margin: 10px;
+        text-decoration: none;
+        border-radius: 6px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+      }
+      .btn-primary {
+        background: #22c55e;
+        color: white;
+      }
+      .btn-primary:hover {
+        background: #16a34a;
+      }
+      .btn-secondary {
+        background: #f1f5f9;
+        color: #475569;
+        border: 2px solid #e2e8f0;
+      }
+      .btn-secondary:hover {
+        background: #e2e8f0;
+      }
+      .footer {
+        text-align: center;
+        margin-top: 30px;
+        padding: 20px;
+        color: #64748b;
+        font-size: 14px;
+        background: #f8fafc;
+        border-radius: 8px;
+      }
+      .footer a {
+        color: #22c55e;
+        text-decoration: none;
+      }
+      .divider {
+        height: 1px;
+        background: linear-gradient(
+          to right,
+          transparent,
+          #e2e8f0,
+          transparent
+        );
+        margin: 30px 0;
+      }
+      @media (max-width: 600px) {
+        body {
+          padding: 10px;
+        }
+        .header,
+        .content {
+          padding: 20px;
+        }
+        .btn {
+          display: block;
+          margin: 10px 0;
+        }
+        .info-row {
+          flex-direction: column;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <div class="icon">🌱</div>
+      <h1>Conta Aprovada!</h1>
+      <p>Bem-vindo ao ReplantaSystem</p>
+    </div>
+
+    <div class="content">
+      <p>Olá <strong>{{userName}}</strong>,</p>
+
+      <div class="success-badge">
+        ✅ A sua conta foi aprovada com sucesso!
+      </div>
+
+      <p>Temos o prazer de informar que a sua conta ReplantaSystem foi aprovada
+        pelo nosso administrador. Já pode aceder à plataforma e começar a gerir
+        os seus projetos de jardinagem.</p>
+
+      <div class="info-card">
+        <h3>📋 Informações da Conta</h3>
+        <div class="info-row">
+          <span class="info-label">Nome:</span>
+          <span class="info-value">{{userName}}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Email:</span>
+          <span class="info-value">{{userEmail}}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Tipo de Conta:</span>
+          <span class="info-value">{{userRole}}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Aprovado por:</span>
+          <span class="info-value">{{approvedBy}}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Data de Aprovação:</span>
+          <span class="info-value">{{approvedAt}}</span>
+        </div>
+      </div>
+
+      <div class="cta-buttons">
+        <a href="{{loginUrl}}" class="btn btn-primary">🚀 Fazer Login</a>
+        <a href="{{dashboardUrl}}" class="btn btn-secondary">📊 Ir para
+          Dashboard</a>
+      </div>
+
+      <div class="divider"></div>
+
+      <h3>🌟 O que pode fazer agora:</h3>
+      <ul style="color: #475569; line-height: 1.8;">
+        {{#if (eq userRole "Cliente")}}
+          <li><strong>Criar projetos</strong>
+            - Solicite novos projetos de jardinagem</li>
+          <li><strong>Acompanhar progresso</strong>
+            - Veja o status dos seus projetos em tempo real</li>
+          <li><strong>Comunicar</strong>
+            - Fale diretamente com a nossa equipa</li>
+          <li><strong>Gerir localização</strong>
+            - Veja os seus projetos no mapa</li>
+        {{else}}
+          <li><strong>Gerir projetos</strong>
+            - Trabalhe nos projetos atribuídos</li>
+          <li><strong>Atualizar progresso</strong>
+            - Mantenha os clientes informados</li>
+          <li><strong>Colaborar</strong>
+            - Trabalhe em equipa com outros colaboradores</li>
+          <li><strong>Planeamento</strong>
+            - Use as ferramentas de gestão de tarefas</li>
+        {{/if}}
+      </ul>
+
+      <div
+        style="background: #f0f9ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 20px; margin: 20px 0;"
+      >
+        <h4 style="color: #1e40af; margin: 0 0 10px 0;">💡 Dica:</h4>
+        <p style="margin: 0; color: #475569;">
+          Complete o seu perfil e explore todas as funcionalidades disponíveis.
+          Caso tenha dúvidas, não hesite em contactar-nos.
+        </p>
+      </div>
+    </div>
+
+    <div class="footer">
+      <p>
+        <strong>ReplantaSystem</strong><br />
+        Sistema de Gestão de Projetos de Jardinagem
+      </p>
+      <div class="divider" style="margin: 15px 0;"></div>
+      <p>
+        Precisa de ajuda? Contacte-nos:
+        <a href="mailto:{{supportEmail}}">{{supportEmail}}</a>
+      </p>
+      <p style="font-size: 12px; color: #94a3b8; margin-top: 20px;">
+        Este email foi enviado automaticamente. Por favor, não responda
+        diretamente a este email.
+      </p>
+    </div>
+  </body>
+</html>

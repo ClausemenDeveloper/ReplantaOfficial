@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background circle with gradient -->
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#22c55e;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#16a34a;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="leafGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#34d399;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#10b981;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="stemGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#84cc16;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#65a30d;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <circle cx="256" cy="256" r="240" fill="url(#bgGradient)" stroke="#ffffff" stroke-width="16"/>
+  
+  <!-- Plant stem -->
+  <path d="M256 400 Q256 350 256 300 Q256 250 256 200" 
+        stroke="url(#stemGradient)" 
+        stroke-width="12" 
+        stroke-linecap="round" 
+        fill="none"/>
+  
+  <!-- Main leaf (left) -->
+  <path d="M256 220 Q200 180 160 200 Q140 220 160 240 Q200 260 256 240" 
+        fill="url(#leafGradient)" 
+        stroke="#ffffff" 
+        stroke-width="3"/>
+  
+  <!-- Main leaf (right) -->
+  <path d="M256 240 Q312 200 352 220 Q372 240 352 260 Q312 280 256 260" 
+        fill="url(#leafGradient)" 
+        stroke="#ffffff" 
+        stroke-width="3"/>
+  
+  <!-- Small leaf (left) -->
+  <path d="M256 280 Q220 260 200 280 Q190 290 200 300 Q220 310 256 300" 
+        fill="url(#leafGradient)" 
+        stroke="#ffffff" 
+        stroke-width="2"/>
+  
+  <!-- Small leaf (right) -->
+  <path d="M256 300 Q292 280 312 300 Q322 310 312 320 Q292 330 256 320" 
+        fill="url(#leafGradient)" 
+        stroke="#ffffff" 
+        stroke-width="2"/>
+  
+  <!-- Flower/seed -->
+  <circle cx="256" cy="180" r="20" fill="#fbbf24" stroke="#ffffff" stroke-width="4"/>
+  <circle cx="256" cy="180" r="12" fill="#f59e0b"/>
+  
+  <!-- Petals -->
+  <circle cx="240" cy="170" r="8" fill="#fef3c7" opacity="0.8"/>
+  <circle cx="272" cy="170" r="8" fill="#fef3c7" opacity="0.8"/>
+  <circle cx="246" cy="195" r="8" fill="#fef3c7" opacity="0.8"/>
+  <circle cx="266" cy="195" r="8" fill="#fef3c7" opacity="0.8"/>
+  
+  <!-- Company name (optional, can be removed for cleaner look) -->
+  <text x="256" y="450" 
+        font-family="Arial, sans-serif" 
+        font-size="28" 
+        font-weight="bold" 
+        text-anchor="middle" 
+        fill="#ffffff">
+    ReplantaSystem
+  </text>
+</svg>
