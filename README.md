@@ -211,8 +211,8 @@ SMTP_PASS=senha_de_app_gmail
 #### **3. Credenciais de Admin**
 
 ```bash
-Email: clausemenandredossantos@gmail.com
-Password: @Venus0777
+Email: c*************@gmail.com
+Password: *********
 ```
 
 ### **🌐 Build para Produção**
@@ -596,6 +596,6 @@ Este projeto está licenciado sob a **MIT License** - veja o arquivo [LICENSE](L
 [![Website](https://img.shields.io/badge/website-replantasystem.com-green)](https://replantasystem.com)
 [![Email](https://img.shields.io/badge/email-clausemenandredossantos@gmail.com-blue)](mailto:clausemenandredossantos@gmail.com)
 
-**Feito com ❤️ e ☕ por [Clausemen André dos Santos](mailto:clausemenandredossantos@gmail.com)**
+**Feito com ❤️ e ☕ por [Clausemen Custódio Nanro](mailto:clausemenandredossantos@gmail.com)**
 
 </div>
