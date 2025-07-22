@@ -116,8 +116,8 @@ http://localhost:8080
 ### **Passo 3: Login como admin**
 
 1. Ir para `/login`
-2. Email: `clausemenandredossantos@gmail.com`
-3. Password: `@Venus0777`
+2. Email: `c*************************@gmail.com`
+3. Password: `*********`
 4. Resultado → Acesso ao dashboard admin
 
 ### **Passo 4: Aprovar cliente (via API)**
