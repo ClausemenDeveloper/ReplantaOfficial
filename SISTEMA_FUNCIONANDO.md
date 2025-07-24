@@ -89,7 +89,7 @@ http://localhost:8080
 ### **2. Credenciais do Admin:**
 
 - **Email:** `clausemenandredossantos@gmail.com`
-- **Password:** `@Venus0777`
+- **Password:** ``
 
 ### **3. Fluxo Completo:**
 
