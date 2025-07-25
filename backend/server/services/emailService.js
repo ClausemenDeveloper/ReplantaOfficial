@@ -27,7 +27,8 @@ class EmailService {
         pass: process.env.SMTP_PASS,
       },
       tls: {
-        rejectUnauthorized: false,
+        // Em produção, esta opção DEVE ser true.
+        rejectUnauthorized: process.env.NODE_ENV === 'development' ? false : true,
       },
     };
 
@@ -76,16 +77,9 @@ class EmailService {
       fs.mkdirSync(templatesDir, { recursive: true });
     }
 
-    const templateFiles = [
-      "welcome.hbs",
-      "project_update.hbs",
-      "project_completion.hbs",
-      "maintenance_reminder.hbs",
-      "payment_reminder.hbs",
-      "password_reset.hbs",
-      "account_activation.hbs",
-      "weekly_report.hbs",
-    ];
+    // Carrega dinamicamente todos os ficheiros .hbs do diretório de templates.
+    // Isto torna a adição de novos templates mais fácil, sem precisar de alterar o código.
+    const templateFiles = fs.readdirSync(templatesDir).filter(file => file.endsWith('.hbs'));
 
     templateFiles.forEach((file) => {
       const templatePath = path.join(templatesDir, file);
@@ -409,10 +403,6 @@ class EmailService {
       return { success: false, error: error.message };
     }
   }
-
-  // ===============================
-  // EMAIL TEMPLATES
-  // ===============================
 
   getWelcomeTemplate() {
     return `

@@ -36,6 +36,13 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { useNotifications } from "@/services/notificationService";
+// SUGESTÃO: Mover estas funções para um ficheiro de utilitários, ex: @/lib/notificationUtils.ts
+// para evitar duplicação e promover a reutilização.
+import {
+  getNotificationIcon,
+  getPriorityColor,
+  formatTimestamp,
+} from "@/lib/notificationUtils";
 import type {
   NotificationTypes,
   ProjectNotification,
@@ -84,53 +91,6 @@ export function NotificationCenter({
 
     onNotificationClick?.(notification);
     setIsOpen(false);
-  };
-
-  const getNotificationIcon = (type: string, priority: string) => {
-    const iconClass = cn(
-      "w-5 h-5",
-      priority === "urgent" ? "text-red-500" : "text-garden-green",
-    );
-
-    switch (type) {
-      case "project":
-        return <Smartphone className={iconClass} />;
-      case "maintenance":
-        return <Settings className={iconClass} />;
-      case "email":
-        return <Mail className={iconClass} />;
-      default:
-        return <Bell className={iconClass} />;
-    }
-  };
-
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case "urgent":
-        return "bg-red-500";
-      case "high":
-        return "bg-orange-500";
-      case "medium":
-        return "bg-yellow-500";
-      case "low":
-        return "bg-gray-400";
-      default:
-        return "bg-garden-green";
-    }
-  };
-
-  const formatTimestamp = (timestamp: Date) => {
-    const now = new Date();
-    const diff = now.getTime() - timestamp.getTime();
-    const minutes = Math.floor(diff / 60000);
-    const hours = Math.floor(diff / 3600000);
-    const days = Math.floor(diff / 86400000);
-
-    if (minutes < 1) return "Agora mesmo";
-    if (minutes < 60) return `Há ${minutes}m`;
-    if (hours < 24) return `Há ${hours}h`;
-    if (days < 7) return `Há ${days}d`;
-    return timestamp.toLocaleDateString("pt-PT");
   };
 
   return (
@@ -318,6 +278,8 @@ function NotificationItem({
   onMarkAsRead,
 }: NotificationItemProps) {
   return (
+    // SUGESTÃO: Este componente `NotificationItem` poderia ser movido para o seu próprio ficheiro
+    // (ex: `components/notifications/NotificationItem.tsx`) para melhorar a organização do código.
     <div
       className={cn(
         "p-3 rounded-lg border cursor-pointer transition-all hover:shadow-md group",
@@ -402,39 +364,6 @@ function NotificationItem({
       </div>
     </div>
   );
-
-  function getPriorityColor(priority: string) {
-    switch (priority) {
-      case "urgent":
-        return "bg-red-500";
-      case "high":
-        return "bg-orange-500";
-      case "medium":
-        return "bg-yellow-500";
-      case "low":
-        return "bg-gray-400";
-      default:
-        return "bg-garden-green";
-    }
-  }
-
-  function getNotificationIcon(type: string, priority: string) {
-    const iconClass = cn(
-      "w-5 h-5",
-      priority === "urgent" ? "text-red-500" : "text-garden-green",
-    );
-
-    switch (type) {
-      case "project":
-        return <Smartphone className={iconClass} />;
-      case "maintenance":
-        return <Settings className={iconClass} />;
-      case "email":
-        return <Mail className={iconClass} />;
-      default:
-        return <Bell className={iconClass} />;
-    }
-  }
 }
 
 // Notification settings component
@@ -443,6 +372,8 @@ interface NotificationSettingsProps {
 }
 
 function NotificationSettings({ userRole }: NotificationSettingsProps) {
+  // SUGESTÃO: Este componente `NotificationSettings` também poderia ser movido para o seu próprio ficheiro
+  // (ex: `components/notifications/NotificationSettings.tsx`).
   const [settings, setSettings] = useState({
     pushEnabled: true,
     emailEnabled: true,
@@ -551,21 +482,6 @@ function NotificationSettings({ userRole }: NotificationSettingsProps) {
       </div>
     </div>
   );
-}
-
-// Helper function to format timestamps
-function formatTimestamp(timestamp: Date): string {
-  const now = new Date();
-  const diff = now.getTime() - timestamp.getTime();
-  const minutes = Math.floor(diff / 60000);
-  const hours = Math.floor(diff / 3600000);
-  const days = Math.floor(diff / 86400000);
-
-  if (minutes < 1) return "Agora mesmo";
-  if (minutes < 60) return `Há ${minutes}m`;
-  if (hours < 24) return `Há ${hours}h`;
-  if (days < 7) return `Há ${days}d`;
-  return timestamp.toLocaleDateString("pt-PT");
 }
 
 export default NotificationCenter;

@@ -35,23 +35,18 @@ export function NotificationToast({
   position = "top-right",
 }: NotificationToastProps) {
   const [isVisible, setIsVisible] = useState(true);
-  const [timeLeft, setTimeLeft] = useState(duration);
 
   useEffect(() => {
     if (!autoClose) return;
 
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 100) {
-          setIsVisible(false);
-          setTimeout(onClose, 300);
-          return 0;
-        }
-        return prev - 100;
-      });
-    }, 100);
+    // Usar setTimeout em vez de setInterval para melhor performance.
+    // Isto evita re-renderizações constantes do componente.
+    const timer = setTimeout(() => {
+      setIsVisible(false);
+      setTimeout(onClose, 300); // Esperar a animação de saída
+    }, duration);
 
-    return () => clearInterval(timer);
+    return () => clearTimeout(timer);
   }, [autoClose, duration, onClose]);
 
   const handleClose = () => {
@@ -155,7 +150,6 @@ export function NotificationToast({
   };
 
   const colors = getColorClasses();
-  const progressPercentage = (timeLeft / duration) * 100;
 
   return (
     <AnimatePresence>
@@ -249,9 +243,10 @@ export function NotificationToast({
               <div className="h-1 bg-black/10">
                 <motion.div
                   className="h-full bg-current opacity-30"
+                  // Animar a barra de progresso diretamente com framer-motion
                   initial={{ width: "100%" }}
-                  animate={{ width: `${progressPercentage}%` }}
-                  transition={{ duration: 0.1, ease: "linear" }}
+                  animate={{ width: "0%" }}
+                  transition={{ duration: duration / 1000, ease: "linear" }}
                 />
               </div>
             )}
@@ -454,12 +449,12 @@ function formatTimestamp(timestamp: Date): string {
   const now = new Date();
   const diff = now.getTime() - timestamp.getTime();
   const minutes = Math.floor(diff / 60000);
-  const hours = Math.floor(diff / 3600000);
 
   if (minutes < 1) return "Agora mesmo";
   if (minutes < 60) return `Há ${minutes} minuto${minutes > 1 ? "s" : ""}`;
-  if (hours < 24)
-    return `Há ${hours} hora${hours > 1 ? "s" : ""} e ${minutes % 60} minuto${minutes % 60 > 1 ? "s" : ""}`;
+
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `Há ${hours} hora${hours > 1 ? "s" : ""}`;
 
   return timestamp.toLocaleTimeString("pt-PT", {
     hour: "2-digit",

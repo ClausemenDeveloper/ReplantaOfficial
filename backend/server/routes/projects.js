@@ -8,18 +8,6 @@ import jwt from "jsonwebtoken";
 
 const router = express.Router();
 
-// Middleware para verificar conexão com DB
-const checkDatabaseConnection = async (req, res, next) => {
-  if (!databaseService.isConnectedToDatabase()) {
-    return res.status(503).json({
-      success: false,
-      message: "Serviço temporariamente indisponível",
-      error: "Database not connected",
-    });
-  }
-  next();
-};
-
 // Middleware para autenticação
 const authenticate = async (req, res, next) => {
   try {
@@ -31,7 +19,13 @@ const authenticate = async (req, res, next) => {
       });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || "secret_key");
+    // ERRO DE SEGURANÇA CRÍTICO: Nunca use uma chave secreta de fallback.
+    // Se a variável de ambiente não estiver definida, a aplicação deve falhar ao iniciar.
+    if (!process.env.JWT_SECRET) {
+      throw new Error("JWT_SECRET não está definido no ambiente.");
+    }
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
     const user = await User.findById(decoded.userId);
 
     if (!user || !user.isActive) {
@@ -50,6 +44,21 @@ const authenticate = async (req, res, next) => {
     });
   }
 };
+
+// Middleware para verificar conexão com DB
+const checkDatabaseConnection = async (req, res, next) => {
+  if (!databaseService.isConnectedToDatabase()) {
+    return res.status(503).json({
+      success: false,
+      message: "Serviço temporariamente indisponível",
+      error: "Database not connected",
+    });
+  }
+  next();
+};
+
+// Aplicar o middleware a todas as rotas deste ficheiro de uma só vez.
+router.use(checkDatabaseConnection);
 
 // Validações
 const createProjectValidation = [
@@ -77,7 +86,7 @@ const createProjectValidation = [
 ];
 
 // GET /api/projects - Listar projetos
-router.get("/", checkDatabaseConnection, authenticate, async (req, res) => {
+router.get("/", authenticate, async (req, res, next) => { // Adicionar 'next' para o error handler
   try {
     const { page = 1, limit = 10, status, type, priority } = req.query;
     const skip = (page - 1) * limit;
@@ -119,21 +128,18 @@ router.get("/", checkDatabaseConnection, authenticate, async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Erro ao listar projetos:", error);
-    res.status(500).json({
-      success: false,
-      message: "Erro interno do servidor",
-    });
+    // Centralizar o tratamento de erros
+    next(error);
   }
 });
 
 // GET /api/projects/:id - Obter projeto específico
 router.get(
   "/:id",
-  checkDatabaseConnection,
   authenticate,
   [param("id").isMongoId().withMessage("ID inválido")],
-  async (req, res) => {
+  // SUGESTÃO: Criar um middleware de tratamento de erros global para evitar repetição de try/catch.
+  async (req, res, next) => {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
@@ -176,11 +182,7 @@ router.get(
         data: { project },
       });
     } catch (error) {
-      console.error("Erro ao obter projeto:", error);
-      res.status(500).json({
-        success: false,
-        message: "Erro interno do servidor",
-      });
+      next(error);
     }
   },
 );
@@ -188,10 +190,9 @@ router.get(
 // POST /api/projects - Criar novo projeto
 router.post(
   "/",
-  checkDatabaseConnection,
   authenticate,
   createProjectValidation,
-  async (req, res) => {
+  async (req, res, next) => {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
@@ -243,12 +244,7 @@ router.post(
         data: { project: populatedProject },
       });
     } catch (error) {
-      console.error("Erro ao criar projeto:", error);
-      res.status(500).json({
-        success: false,
-        message: "Erro interno do servidor",
-        error: error.message,
-      });
+      next(error);
     }
   },
 );
@@ -256,10 +252,9 @@ router.post(
 // PUT /api/projects/:id - Atualizar projeto
 router.put(
   "/:id",
-  checkDatabaseConnection,
   authenticate,
   [param("id").isMongoId().withMessage("ID inválido")],
-  async (req, res) => {
+  async (req, res, next) => {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
@@ -338,11 +333,7 @@ router.put(
         data: { project: updatedProject },
       });
     } catch (error) {
-      console.error("Erro ao atualizar projeto:", error);
-      res.status(500).json({
-        success: false,
-        message: "Erro interno do servidor",
-      });
+      next(error);
     }
   },
 );
@@ -350,7 +341,6 @@ router.put(
 // POST /api/projects/:id/collaborators - Adicionar colaborador
 router.post(
   "/:id/collaborators",
-  checkDatabaseConnection,
   authenticate,
   [
     param("id").isMongoId().withMessage("ID inválido"),
@@ -359,7 +349,7 @@ router.post(
       .isIn(["lead", "designer", "maintenance", "consultant"])
       .withMessage("Papel inválido"),
   ],
-  async (req, res) => {
+  async (req, res, next) => {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
@@ -414,11 +404,7 @@ router.post(
         data: { project: updatedProject },
       });
     } catch (error) {
-      console.error("Erro ao adicionar colaborador:", error);
-      res.status(500).json({
-        success: false,
-        message: "Erro interno do servidor",
-      });
+      next(error);
     }
   },
 );
@@ -426,9 +412,8 @@ router.post(
 // GET /api/projects/dashboard/stats - Estatísticas do dashboard
 router.get(
   "/dashboard/stats",
-  checkDatabaseConnection,
   authenticate,
-  async (req, res) => {
+  async (req, res, next) => {
     try {
       let filter = { isActive: true };
 
@@ -466,11 +451,7 @@ router.get(
         },
       });
     } catch (error) {
-      console.error("Erro nas estatísticas:", error);
-      res.status(500).json({
-        success: false,
-        message: "Erro interno do servidor",
-      });
+      next(error);
     }
   },
 );
