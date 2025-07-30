@@ -2,7 +2,7 @@
   "type": "module",
   "scripts": {
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
-    "dev": "node server/index.js"
+    "dev": "ts-node server/index.ts"
   },
   "dependencies": {
     "bcryptjs": "^3.0.2",
@@ -27,6 +27,7 @@
     "@types/jest": "^30.0.0",
     "@types/mongoose": "^5.11.97",
     "babel-jest": "^30.0.5",
-    "ts-jest": "^29.4.0"
+    "ts-jest": "^29.4.0",
+    "ts-node": "^10.9.1"
   }
 }
