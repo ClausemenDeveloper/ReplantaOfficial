@@ -1,5 +1,5 @@
 // Comprehensive Notification Service for ReplantaSystem
-import { validateInput } from "@/lib/security";
+import { validateInput } from "../lib/security";
 import { useState, useEffect } from "react";
 
 // Types for different notification scenarios
@@ -106,10 +106,16 @@ class NotificationService {
     try {
       const stored = localStorage.getItem("replanta_notifications");
       if (stored) {
-        this.notifications = JSON.parse(stored).map((n: any) => ({
-          ...n,
-          timestamp: new Date(n.timestamp),
-        }));
+        const parsed = JSON.parse(stored);
+        this.notifications = Array.isArray(parsed)
+          ? parsed.map((n: any) => ({
+              ...n,
+              timestamp: n.timestamp ? new Date(n.timestamp) : new Date(),
+              read: typeof n.read === "boolean" ? n.read : false,
+            }))
+          : [];
+      } else {
+        this.notifications = [];
       }
     } catch (error) {
       console.error("Error loading notifications:", error);
@@ -128,13 +134,18 @@ class NotificationService {
     }
   }
 
-  public addNotification(notification: any): string {
+  public addNotification(notification: Partial<NotificationTypes>): string {
     const id = `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const newNotification: NotificationTypes = {
       ...notification,
       id,
       timestamp: new Date(),
       read: false,
+      type: notification.type || "info",
+      priority: notification.priority || "low",
+      userRole: notification.userRole || "all",
+      title: notification.title || "Nova Notificação",
+      message: notification.message || "Você recebeu uma nova notificação.",
     } as NotificationTypes;
 
     this.notifications.unshift(newNotification);
@@ -173,6 +184,11 @@ class NotificationService {
       filtered = filtered.filter((n) => !n.read);
     }
 
+    // Remove notifications with missing required fields
+    filtered = filtered.filter(
+      (n) => n.title && n.message && n.timestamp,
+    );
+
     return filtered.sort(
       (a, b) => b.timestamp.getTime() - a.timestamp.getTime(),
     );
@@ -182,7 +198,7 @@ class NotificationService {
     const notification = this.notifications.find(
       (n) => n.id === notificationId,
     );
-    if (notification) {
+    if (notification && !notification.read) {
       notification.read = true;
       this.saveNotifications();
 
@@ -222,12 +238,12 @@ class NotificationService {
   public deleteNotification(notificationId: string): boolean {
     const index = this.notifications.findIndex((n) => n.id === notificationId);
     if (index > -1) {
-      this.notifications.splice(index, 1);
+      const deleted = this.notifications.splice(index, 1)[0];
       this.saveNotifications();
 
       window.dispatchEvent(
         new CustomEvent("notification-deleted", {
-          detail: { id: notificationId },
+          detail: deleted,
         }),
       );
 
@@ -493,11 +509,11 @@ class NotificationService {
   public async notifyProjectUpdate(
     projectId: string,
     projectName: string,
-    status: string,
+    status: "started" | "progress" | "completed" | "delayed" | "cancelled",
     clientEmail: string,
     collaboratorName: string,
   ): Promise<void> {
-    const statusMessages: any = {
+    const statusMessages: Record<typeof status, string> = {
       started: "foi iniciado",
       progress: "teve progresso atualizado",
       completed: "foi concluído",
@@ -571,9 +587,9 @@ class NotificationService {
   public async notifySystemAlert(
     title: string,
     message: string,
-    type: string,
-    module: string,
-    priority: string = "medium",
+    type: "info" | "success" | "warning" | "error",
+    module: "auth" | "system" | "user" | "project" | "payment",
+    priority: "low" | "medium" | "high" | "urgent" = "medium",
   ): Promise<void> {
     this.addNotification({
       title,

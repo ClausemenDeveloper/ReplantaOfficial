@@ -29,7 +29,12 @@ router.post(
       const userRole = req.user.role;
 
       // Validate subscription data
-      if (!endpoint || !keys || !keys.p256dh || !keys.auth) {
+      if (
+        typeof endpoint !== "string" ||
+        !keys ||
+        typeof keys.p256dh !== "string" ||
+        typeof keys.auth !== "string"
+      ) {
         return res.status(400).json({
           error: "Invalid subscription data",
         });
@@ -42,7 +47,7 @@ router.post(
         userId,
         userRole,
         deviceInfo: {
-          ...deviceInfo,
+          ...(typeof deviceInfo === "object" ? deviceInfo : {}),
           subscribedAt: new Date().toISOString(),
         },
       };
@@ -59,7 +64,7 @@ router.post(
       console.error("Error storing push subscription:", error);
       res.status(500).json({
         error: "Failed to store subscription",
-        details: error.message,
+        details: error instanceof Error ? error.message : String(error),
       });
     }
   },
@@ -69,12 +74,15 @@ router.post(
 router.delete("/subscribe", authenticateJWT, async (req, res) => {
   try {
     const userId = req.user.id;
-
+    if (!userId) {
+      return res.status(401).json({
+        error: "Usuário não autenticado",
+      });
+    }
     if (pushSubscriptions.has(userId)) {
       pushSubscriptions.delete(userId);
       console.log(`Push subscription removed for user ${userId}`);
     }
-
     res.json({
       success: true,
       message: "Unsubscribed successfully",
@@ -83,7 +91,7 @@ router.delete("/subscribe", authenticateJWT, async (req, res) => {
     console.error("Error removing push subscription:", error);
     res.status(500).json({
       error: "Failed to unsubscribe",
-      details: error.message,
+      details: error instanceof Error ? error.message : String(error),
     });
   }
 });
@@ -99,9 +107,14 @@ router.post(
       const { userId, title, body, data, priority } = req.body;
 
       // Validate input
-      if (!title || !body) {
+      if (typeof title !== "string" || typeof body !== "string" || !title || !body) {
         return res.status(400).json({
           error: "Title and body are required",
+        });
+      }
+      if (typeof userId !== "string" || !userId) {
+        return res.status(400).json({
+          error: "UserId is required",
         });
       }
 
@@ -116,10 +129,11 @@ router.post(
       // For now, we'll simulate sending and store for service worker pickup
       const notification = {
         id: `push_${Date.now()}`,
+        type: "push",
         userId,
         title,
         body,
-        data: data || {},
+        data: typeof data === "object" ? data : {},
         priority: priority || "normal",
         timestamp: new Date().toISOString(),
         delivered: false,
@@ -138,7 +152,7 @@ router.post(
       console.error("Error sending push notification:", error);
       res.status(500).json({
         error: "Failed to send push notification",
-        details: error.message,
+        details: error instanceof Error ? error.message : String(error),
       });
     }
   },

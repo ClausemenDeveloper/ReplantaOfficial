@@ -1,9 +1,9 @@
 import * as React from "react";
 
-import type { ToastActionElement, ToastProps } from "@/components/ui/toast";
+import type { ToastActionElement, ToastProps } from "../components/ui/toast";
 
 const TOAST_LIMIT = 1;
-const TOAST_REMOVE_DELAY = 1000000;
+const TOAST_REMOVE_DELAY = 5000; // 5 segundos padrão para UX
 
 type ToasterToast = ToastProps & {
   id: string;
@@ -129,8 +129,14 @@ let memoryState: State = { toasts: [] };
 
 function dispatch(action: Action) {
   memoryState = reducer(memoryState, action);
-  listeners.forEach((listener) => {
-    listener(memoryState);
+  // Notifica listeners de forma segura
+  listeners.slice().forEach((listener) => {
+    try {
+      listener(memoryState);
+    } catch (err) {
+      // Evita quebra global por erro de listener
+      console.error("Erro em listener de toast:", err);
+    }
   });
 }
 
@@ -176,7 +182,8 @@ function useToast() {
         listeners.splice(index, 1);
       }
     };
-  }, [state]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return {
     ...state,

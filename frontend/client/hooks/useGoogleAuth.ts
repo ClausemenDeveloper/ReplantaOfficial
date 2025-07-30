@@ -141,7 +141,6 @@ export const useGoogleAuth = () => {
     } = {},
   ) => {
     if (!hasValidCredentials) {
-      // Render a disabled placeholder button
       element.innerHTML = `
         <div style="
           width: ${options.width || 300}px;

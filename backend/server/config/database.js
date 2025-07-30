@@ -1,23 +1,21 @@
 import mongoose from "mongoose";
 
+// Conexão padrão local
+
 class DatabaseService {
-  constructor() {
-    this.connection = null;
-    this.isConnected = false;
-  }
+  connection = null;
+  isConnected = false;
+  _listenersAdded = false;
 
   async connect() {
     try {
-      if (this.isConnected) {
+      if (this.isConnected && mongoose.connection.readyState === 1) {
         console.log("✅ Database já conectada");
         return this.connection;
       }
 
-      const connectionString =
-        process.env.DB_CONNECTION_STRING ||
-        "mongodb://localhost:27017/replantasystem";
-
-      console.log("🔄 Conectando ao MongoDB...");
+      const connectionString = process.env.MONGODB_URI || "mongodb://localhost:27017/replantasystem";
+      console.log("🔄 Conectando ao MongoDB...", connectionString);
 
       this.connection = await mongoose.connect(connectionString, {
         serverSelectionTimeoutMS: 5000,
@@ -26,30 +24,36 @@ class DatabaseService {
         maxPoolSize: 10,
         minPoolSize: 5,
         maxIdleTimeMS: 30000,
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
       });
 
       this.isConnected = true;
       console.log("✅ MongoDB conectado com sucesso");
 
-      // Event listeners
-      mongoose.connection.on("error", (error) => {
-        console.error("❌ Erro na conexão MongoDB:", error);
-        this.isConnected = false;
-      });
+      // Event listeners (add only once)
+      if (!this._listenersAdded) {
+        mongoose.connection.on("error", (error) => {
+          console.error("❌ Erro na conexão MongoDB:", error instanceof Error ? error.message : error);
+          this.isConnected = false;
+        });
 
-      mongoose.connection.on("disconnected", () => {
-        console.log("⚠️  MongoDB desconectado");
-        this.isConnected = false;
-      });
+        mongoose.connection.on("disconnected", () => {
+          console.log("⚠️  MongoDB desconectado");
+          this.isConnected = false;
+        });
 
-      mongoose.connection.on("reconnected", () => {
-        console.log("🔄 MongoDB reconectado");
-        this.isConnected = true;
-      });
+        mongoose.connection.on("reconnected", () => {
+          console.log("🔄 MongoDB reconectado");
+          this.isConnected = true;
+        });
+
+        this._listenersAdded = true;
+      }
 
       return this.connection;
     } catch (error) {
-      console.error("❌ Erro ao conectar com MongoDB:", error.message);
+      console.error("❌ Erro ao conectar com MongoDB:", error instanceof Error ? error.message : error);
       this.isConnected = false;
       throw error;
     }
@@ -57,19 +61,19 @@ class DatabaseService {
 
   async disconnect() {
     try {
-      if (this.connection && this.isConnected) {
+      if (this.isConnected && mongoose.connection.readyState === 1) {
         await mongoose.disconnect();
         this.isConnected = false;
         console.log("✅ MongoDB desconectado");
       }
     } catch (error) {
-      console.error("❌ Erro ao desconectar MongoDB:", error.message);
+      console.error("❌ Erro ao desconectar MongoDB:", error instanceof Error ? error.message : error);
       throw error;
     }
   }
 
   getConnection() {
-    return this.connection;
+    return mongoose.connection;
   }
 
   isConnectedToDatabase() {
@@ -84,10 +88,8 @@ class DatabaseService {
           message: "Não conectado ao banco de dados",
         };
       }
-
       // Teste simples de ping
       await mongoose.connection.db.admin().ping();
-
       return {
         status: "connected",
         message: "Banco de dados funcionando corretamente",
@@ -98,13 +100,26 @@ class DatabaseService {
     } catch (error) {
       return {
         status: "error",
-        message: error.message,
+        message: error instanceof Error ? error.message : String(error),
+      };
+    }
+  }
+
+  getStatus() {
+    // Método compatível com interface DatabaseService
+    if (this.isConnectedToDatabase()) {
+      return {
+        status: "connected",
+        message: "Banco de dados funcionando corretamente",
+      };
+    } else {
+      return {
+        status: "disconnected",
+        message: "Não conectado ao banco de dados",
       };
     }
   }
 }
 
-// Instância singleton
 const databaseService = new DatabaseService();
-
 export default databaseService;

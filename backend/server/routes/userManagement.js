@@ -1,3 +1,12 @@
+// Middleware global para tratamento de erros
+router.use((err, req, res, next) => {
+  console.error("Erro na rota de usuários:", err);
+  res.status(err.status || 500).json({
+    success: false,
+    message: err.message || "Erro interno do servidor",
+    error: err instanceof Error ? err.message : String(err),
+  });
+});
 import express from "express";
 import { body, param, validationResult } from "express-validator";
 import User from "../models/User.js";
@@ -19,33 +28,47 @@ const checkDatabaseConnection = async (req, res, next) => {
   next();
 };
 
-// Middleware para autenticação
+// Middleware para autenticação robusta
 const authenticate = async (req, res, next) => {
   try {
-    const token = req.headers.authorization?.replace("Bearer ", "");
+    const authHeader = req.headers.authorization;
+    const token = authHeader && authHeader.startsWith("Bearer ") ? authHeader.replace("Bearer ", "") : null;
     if (!token) {
       return res.status(401).json({
         success: false,
         message: "Token não fornecido",
       });
     }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || "secret_key");
+    if (!process.env.JWT_SECRET) {
+      // Falha crítica: não permitir fallback
+      return res.status(500).json({
+        success: false,
+        message: "JWT_SECRET não está definido no ambiente. Contate o administrador.",
+      });
+    }
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+    } catch (err) {
+      return res.status(401).json({
+        success: false,
+        message: "Token inválido ou expirado",
+      });
+    }
     const user = await User.findById(decoded.userId);
-
     if (!user || !user.isActive) {
       return res.status(401).json({
         success: false,
-        message: "Token inválido",
+        message: "Token inválido ou usuário inativo",
       });
     }
-
     req.user = user;
     next();
   } catch (error) {
-    res.status(401).json({
+    res.status(500).json({
       success: false,
-      message: "Token inválido",
+      message: "Erro interno do servidor",
+      error: error instanceof Error ? error.message : String(error),
     });
   }
 };
@@ -96,7 +119,9 @@ router.get(
   requireAdmin,
   async (req, res) => {
     try {
-      const { page = 1, limit = 10, status, role } = req.query;
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 10;
+      const { status, role } = req.query;
       const skip = (page - 1) * limit;
 
       let filter = { isActive: true };
@@ -107,7 +132,7 @@ router.get(
         .populate("approvedBy", "name email")
         .sort({ createdAt: -1 })
         .skip(skip)
-        .limit(parseInt(limit));
+        .limit(limit);
 
       const total = await User.countDocuments(filter);
 
@@ -116,7 +141,7 @@ router.get(
         data: {
           users: users.map((user) => user.getPublicProfile()),
           pagination: {
-            current: parseInt(page),
+            current: page,
             total: Math.ceil(total / limit),
             count: users.length,
             totalItems: total,
@@ -448,6 +473,40 @@ router.put(
       });
     } catch (error) {
       console.error("Erro ao alterar status do usuário:", error);
+      res.status(500).json({
+        success: false,
+        message: "Erro interno do servidor",
+      });
+    }
+  },
+);
+
+// POST /api/users/:id/promote - Promover colaborador a admin
+router.post(
+  "/:id/promote",
+  checkDatabaseConnection,
+  authenticate,
+  requireAdmin, // Apenas admins podem promover
+  async (req, res) => {
+    try {
+      const user = await User.findById(req.params.id);
+      if (!user || user.role !== "collaborator") {
+        return res.status(400).json({
+          success: false,
+          message: "Usuário inválido ou não é colaborador",
+        });
+      }
+
+      user.role = "admin";
+      await user.save();
+
+      res.json({
+        success: true,
+        message: "Usuário promovido a administrador com sucesso",
+        data: user.getPublicProfile(),
+      });
+    } catch (error) {
+      console.error("Erro ao promover usuário:", error);
       res.status(500).json({
         success: false,
         message: "Erro interno do servidor",

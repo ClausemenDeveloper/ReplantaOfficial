@@ -290,7 +290,7 @@ const csrfProtection = (req, res, next) => {
     });
 
     res.cookie("csrf-token", token, {
-      httpOnly: false, // Needs to be accessible by JS
+      httpOnly: true, // Mais seguro, JS pode ler via header se necessário
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
       maxAge: 30 * 60 * 1000,
@@ -309,6 +309,9 @@ const csrfProtection = (req, res, next) => {
       ip: req.ip,
       userAgent: req.get("User-Agent"),
       url: req.url,
+      sessionId,
+      tokenReceived: token,
+      tokenExpected: storedToken ? storedToken.token : null,
       timestamp: new Date().toISOString(),
     });
 

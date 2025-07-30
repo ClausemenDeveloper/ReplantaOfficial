@@ -162,8 +162,8 @@ export function useCache<T>(
     const result = computeFn();
     cache.current.set(cacheKey, result);
 
-    // Clean old cache entries (keep last 10)
-    if (cache.current.size > 10) {
+    // Clean old cache entries (keep last 10, FIFO)
+    while (cache.current.size > 10) {
       const firstKey = cache.current.keys().next().value;
       cache.current.delete(firstKey);
     }

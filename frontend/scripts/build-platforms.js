@@ -285,12 +285,18 @@ async function main() {
   for (const platform of requestedPlatforms) {
     if (!config[platform]) {
       log(`❌ Unknown platform: ${platform}`, "red");
+      results[platform] = false;
       continue;
     }
 
     log(`\n📦 Building ${config[platform].name}...`, "bright");
-    const success = await buildPlatform(platform);
-    results[platform] = success;
+    try {
+      const success = await buildPlatform(platform);
+      results[platform] = success;
+    } catch (err) {
+      log(`❌ Build error for ${platform}: ${err.message || err}`, "red");
+      results[platform] = false;
+    }
   }
 
   // Summary
@@ -303,7 +309,7 @@ async function main() {
   for (const [platform, success] of Object.entries(results)) {
     const status = success ? "✅ SUCCESS" : "❌ FAILED";
     const color = success ? "green" : "red";
-    log(`${config[platform].name}: ${status}`, color);
+    log(`${config[platform]?.name || platform}: ${status}`, color);
   }
 
   log(`\n⏱️  Total time: ${duration}s`, "cyan");

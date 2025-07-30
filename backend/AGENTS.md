@@ -74,12 +74,10 @@ className={cn(
 
 #### Example API Routes
 - `GET /api/ping` - Simple ping api
-- `GET /api/demo` - Demo endpoint  
 
 ### Shared Types
 Import consistent types in both client and server:
 ```typescript
-import { DemoResponse } from '@shared/api';
 ```
 
 Path aliases:

@@ -1,6 +1,6 @@
 import { ReactNode, useEffect } from "react";
-import { usePlatform, platformUtils } from "@/hooks/usePlatform";
-import { cn } from "@/lib/utils";
+import { usePlatform, platformUtils } from "../hooks/usePlatform";
+import { cn } from "../lib/utils";
 
 interface MobileLayoutProps {
   children: ReactNode;
@@ -59,20 +59,29 @@ export default function MobileLayout({
   return (
     <div className={cn(getLayoutClasses(), className)}>
       {/* Mobile-specific header spacing */}
+      {platform.isMobile && safeArea && (
+        <div className="h-safe-top bg-transparent" />
+      )}
       {platform.isMobile && showStatusBar && (
         <div className="h-safe-top bg-transparent" />
       )}
 
-      {/* Main content */}
+      {/* Main content */}      <div className="flex-1 overflow-auto">{children}</div>
+      {/* Ensure content is scrollable on mobile */}
+      <div className="flex-1 overflow-y-auto">
+        {children}
+      </div>
       <div className="flex-1">{children}</div>
 
       {/* Mobile-specific footer spacing */}
+
+      {/* Mobile-specific footer spacing */ }
       {platform.isMobile && safeArea && (
         <div className="h-safe-bottom bg-transparent" />
       )}
 
       {/* Add custom styles for safe areas */}
-      <style jsx>{`
+      <style>{`
         .safe-area-padding {
           padding-top: env(safe-area-inset-top);
           padding-bottom: env(safe-area-inset-bottom);

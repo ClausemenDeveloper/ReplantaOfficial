@@ -177,8 +177,10 @@ class PWAServiceWorker {
 
     if (isOnline && this.registration) {
       // Trigger background sync when back online
-      this.registration.sync.register("sync-user-data");
-      this.registration.sync.register("sync-projects");
+      if ("sync" in this.registration) {
+        (this.registration as any).sync.register("sync-user-data");
+        (this.registration as any).sync.register("sync-projects");
+      }
     }
   }
 
@@ -305,24 +307,28 @@ class PWAServiceWorker {
     // Show update notification
     const updateBanner = document.createElement("div");
     updateBanner.className =
-      "fixed top-0 left-0 right-0 bg-blue-500 text-white p-3 text-center z-50";
+      "fixed top-0 left-0 right-0 bg-blue-500 text-white p-3 text-center z-50 flex items-center justify-center gap-4";
     updateBanner.innerHTML = `
       <span>🔄 Nova versão disponível!</span>
-      <button onclick="this.parentElement.nextElementSibling()" class="ml-4 bg-white text-blue-500 px-3 py-1 rounded">
-        Atualizar
-      </button>
-      <button onclick="this.parentElement.remove()" class="ml-2 text-white">
-        ✕
-      </button>
+      <button id="update-pwa-btn" class="ml-4 bg-white text-blue-500 px-3 py-1 rounded">Atualizar</button>
+      <button id="close-pwa-btn" class="ml-2 text-white">✕</button>
     `;
 
-    const updateButton = updateBanner.querySelector("button");
-    updateButton?.addEventListener("click", () => {
-      this.activateUpdate();
-      updateBanner.remove();
-    });
-
     document.body.prepend(updateBanner);
+
+    const updateBtn = document.getElementById("update-pwa-btn");
+    const closeBtn = document.getElementById("close-pwa-btn");
+    if (updateBtn) {
+      updateBtn.addEventListener("click", () => {
+        this.activateUpdate();
+        updateBanner.remove();
+      });
+    }
+    if (closeBtn) {
+      closeBtn.addEventListener("click", () => {
+        updateBanner.remove();
+      });
+    }
   }
 
   private activateUpdate() {
@@ -365,3 +371,22 @@ export default pwaServiceWorker;
 
 // Global functions for debugging
 (window as any).pwaServiceWorker = pwaServiceWorker;
+/**
+ * Envia eventos para o Google Analytics via gtag ou faz fallback para log local.
+ * @param event - Nome do evento (ex: "event")
+ * @param action - Ação do evento (ex: "pwa_install")
+ * @param params - Parâmetros do evento
+ */
+function gtag(event: string, action: string, params: { event_category: string; event_label: string; }) {
+  if (typeof window !== "undefined" && typeof (window as any).gtag === "function") {
+    try {
+      (window as any).gtag(event, action, params);
+    } catch (err) {
+      console.warn("Erro ao enviar evento gtag:", err, event, action, params);
+    }
+  } else {
+    // Fallback: log para depuração
+    console.log("[DEBUG] gtag event:", { event, action, params });
+  }
+}
+

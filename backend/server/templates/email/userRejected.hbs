@@ -202,14 +202,18 @@
           <span class="info-label">Tipo de Conta:</span>
           <span class="info-value">{{userRole}}</span>
         </div>
+        {{#if rejectedBy}}
         <div class="info-row">
           <span class="info-label">Analisado por:</span>
           <span class="info-value">{{rejectedBy}}</span>
         </div>
+        {{/if}}
+        {{#if rejectedAt}}
         <div class="info-row">
           <span class="info-label">Data da Decisão:</span>
           <span class="info-value">{{rejectedAt}}</span>
         </div>
+        {{/if}}
       </div>
 
       <div class="reason-box">

@@ -10,12 +10,12 @@ import {
   Sprout,
   Briefcase,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import GoogleSignInButton from "@/components/GoogleSignInButton";
-import { authenticateWithBackend } from "@/hooks/useGoogleAuth";
+import { Button } from "../../components/ui/button";
+import { Input } from "../../components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
+import { Label } from "../../components/ui/label";
+import GoogleSignInButton from "../../components/GoogleSignInButton";
+import { authenticateWithBackend } from "../../hooks/useGoogleAuth";
 
 export default function CollaboratorLogin() {
   const navigate = useNavigate();
@@ -29,27 +29,55 @@ export default function CollaboratorLogin() {
     navigate("/select-interface");
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Collaborator login:", formData);
-    navigate("/collaborator/dashboard");
+    setLoading(true);
+    setError(null);
+    try {
+      // Chamada ao backend para autenticação
+      const response = await fetch("/api/auth/collaborator-login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+      const data = await response.json();
+      if (response.ok && data.success) {
+        localStorage.setItem("authToken", data.token);
+        navigate("/collaborator/dashboard");
+      } else {
+        setError(data.message || "Email ou palavra-passe inválidos.");
+      }
+    } catch (err) {
+      setError("Erro ao autenticar. Tente novamente mais tarde.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleGoogleSuccess = async (googleUser: any) => {
+    setLoading(true);
+    setError(null);
     try {
-      console.log("Google login successful for collaborator:", googleUser);
-      // TODO: Verify collaborator permissions
-      // const result = await authenticateWithBackend(googleUser, 'collaborator');
-      // if (result.success) {
-      //   navigate('/collaborator/dashboard');
-      // }
-      navigate("/collaborator/dashboard");
+      const result = await authenticateWithBackend(googleUser, "collaborator");
+      if (result.success) {
+        localStorage.setItem("authToken", result.token);
+        navigate("/collaborator/dashboard");
+      } else {
+        setError("Falha na autenticação Google.");
+      }
     } catch (error) {
+      setError("Erro na autenticação Google. Tente novamente.");
       console.error("Google authentication error:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleGoogleError = (error: string) => {
+    setError("Erro ao autenticar com Google: " + error);
     console.error("Google login error:", error);
   };
 
@@ -96,7 +124,7 @@ export default function CollaboratorLogin() {
           </CardHeader>
 
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-6" autoComplete="off">
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-garden-green-dark">
                   Email Profissional
@@ -165,9 +193,16 @@ export default function CollaboratorLogin() {
               <Button
                 type="submit"
                 className="w-full bg-garden-green-dark hover:bg-green-800 text-white py-3"
+                disabled={loading}
+                aria-busy={loading}
               >
-                Entrar na Área de Trabalho
+                {loading ? "A autenticar..." : "Entrar na Área de Trabalho"}
               </Button>
+            {error && (
+              <div className="text-red-600 text-sm text-center mt-2" role="alert">
+                {error}
+              </div>
+            )}
             </form>
 
             {/* Divider */}

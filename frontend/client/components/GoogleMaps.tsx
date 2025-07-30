@@ -1,8 +1,11 @@
 import { useCallback, useEffect, useRef, useState, memo } from "react";
 import { Wrapper, Status } from "@googlemaps/react-wrapper";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { Button } from "../components/ui/button";
+import { Badge } from "../components/ui/badge";
+
+// Import LatLngLiteral type from Google Maps types
+type LatLngLiteral = google.maps.LatLngLiteral;
 import {
   MapPin,
   Navigation,
@@ -16,30 +19,29 @@ import {
   Loader2,
   AlertCircle,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "../lib/utils";
+// Types from google.maps are available globally when the API is loaded.
 
-// Types for our gardening-specific map features
 interface GardenLocation {
   id: string;
   name: string;
   type: "project" | "nursery" | "supplier" | "maintenance" | "client";
-  coordinates: google.maps.LatLngLiteral;
+  coordinates: LatLngLiteral;
   description?: string;
   status?: "active" | "pending" | "completed";
   priority?: "high" | "medium" | "low";
   assignedTo?: string;
   estimatedDuration?: string;
 }
-
 interface GoogleMapsProps {
   locations?: GardenLocation[];
-  center?: google.maps.LatLngLiteral;
+  center?: LatLngLiteral;
   zoom?: number;
   height?: string;
   showControls?: boolean;
   showFilters?: boolean;
   onLocationSelect?: (location: GardenLocation) => void;
-  onLocationCreate?: (coordinates: google.maps.LatLngLiteral) => void;
+  onLocationCreate?: (coordinates: LatLngLiteral) => void;
   userRole?: "client" | "admin" | "collaborator";
   className?: string;
 }
@@ -271,7 +273,8 @@ const GoogleMaps = memo(
               />
             );
           default:
-            return null;
+            // Always return a valid ReactElement, e.g. an empty div
+            return <div />;
         }
       },
       [
@@ -373,34 +376,33 @@ const GoogleMaps = memo(
             style={{ height }}
             className="w-full border-t border-garden-green/10"
           >
-            {import.meta.env.VITE_GOOGLE_MAPS_API_KEY ? (
+            {import.meta.env?.VITE_GOOGLE_MAPS_API_KEY ? (
               <Wrapper
-                apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}
-                render={render}
-                libraries={["places", "geometry"]}
+              apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}
+              render={render}
+              libraries={["places", "geometry"]}
               />
             ) : (
               <div className="flex items-center justify-center h-full bg-yellow-50 rounded-lg border border-yellow-200">
-                <div className="text-center space-y-4 p-6">
-                  <AlertCircle className="w-12 h-12 text-yellow-500 mx-auto" />
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium text-yellow-800">
-                      Google Maps não configurado
-                    </p>
-                    <p className="text-xs text-yellow-600">
-                      A chave da API do Google Maps não foi encontrada.
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      Configure VITE_GOOGLE_MAPS_API_KEY nas variáveis de
-                      ambiente para activar o mapa.
-                    </p>
-                  </div>
-                  <div className="pt-2">
-                    <Badge variant="outline" className="text-xs">
-                      Funcionalidade: Visualização de localizações
-                    </Badge>
-                  </div>
+              <div className="text-center space-y-4 p-6">
+                <AlertCircle className="w-12 h-12 text-yellow-500 mx-auto" />
+                <div className="space-y-2">
+                <p className="text-sm font-medium text-yellow-800">
+                  Google Maps não configurado
+                </p>
+                <p className="text-xs text-yellow-600">
+                  A chave da API do Google Maps não foi encontrada.
+                </p>
+                <p className="text-xs text-gray-500">
+                  Configure VITE_GOOGLE_MAPS_API_KEY nas variáveis de ambiente para ativar o mapa.
+                </p>
                 </div>
+                <div className="pt-2">
+                <Badge variant="outline" className="text-xs">
+                  Funcionalidade: Visualização de localizações
+                </Badge>
+                </div>
+              </div>
               </div>
             )}
           </div>
@@ -480,3 +482,13 @@ function createInfoWindowContent(location: GardenLocation): string {
 
 export default GoogleMaps;
 export type { GardenLocation, GoogleMapsProps };
+
+// Add this to fix the ImportMeta typing for Vite env variables
+declare global {
+  interface ImportMeta {
+    env: {
+      VITE_GOOGLE_MAPS_API_KEY?: string;
+      [key: string]: any;
+    };
+  }
+}

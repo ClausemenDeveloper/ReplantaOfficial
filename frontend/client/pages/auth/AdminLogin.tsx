@@ -10,12 +10,12 @@ import {
   Sprout,
   Shield,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import GoogleSignInButton from "@/components/GoogleSignInButton";
-import { authenticateWithBackend } from "@/hooks/useGoogleAuth";
+import { Button } from "../../components/ui/button";
+import { Input } from "../../components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
+import { Label } from "../../components/ui/label";
+import GoogleSignInButton from "../../components/GoogleSignInButton";
+import { authenticateWithBackend } from "../../hooks/useGoogleAuth";
 
 export default function AdminLogin() {
   const navigate = useNavigate();
@@ -29,29 +29,56 @@ export default function AdminLogin() {
     navigate("/select-interface");
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Admin login:", formData);
-    navigate("/admin/dashboard");
+    setLoading(true);
+    setError(null);
+    try {
+      // Exemplo de chamada ao backend para autenticação
+      const response = await fetch("/api/auth/admin-login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+      const data = await response.json();
+      if (response.ok && data.user?.role === "admin") {
+        localStorage.setItem("authToken", data.token);
+        navigate("/admin/dashboard");
+      } else {
+        setError(data.message || "Acesso negado: Permissões de administrador necessárias");
+      }
+    } catch (err) {
+      setError("Erro ao autenticar. Tente novamente mais tarde.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleGoogleSuccess = async (googleUser: any) => {
+    setLoading(true);
+    setError(null);
     try {
-      console.log("Google login successful for admin:", googleUser);
-      // TODO: Verify admin permissions
-      // const result = await authenticateWithBackend(googleUser, 'admin');
-      // if (result.success && result.user.role === 'admin') {
-      //   navigate('/admin/dashboard');
-      // } else {
-      //   alert('Acesso negado: Permissões de administrador necessárias');
-      // }
-      navigate("/admin/dashboard");
+      // Chama autenticação backend para Google, verifica role
+      const result = await authenticateWithBackend(googleUser, "admin");
+      if (result.success && result.user?.role === "admin") {
+        localStorage.setItem("authToken", result.token);
+        navigate("/admin/dashboard");
+      } else {
+        setError("Acesso negado: Permissões de administrador necessárias");
+      }
     } catch (error) {
+      setError("Erro na autenticação Google. Tente novamente.");
       console.error("Google authentication error:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleGoogleError = (error: string) => {
+    setError("Erro ao autenticar com Google: " + error);
     console.error("Google login error:", error);
   };
 
@@ -98,7 +125,7 @@ export default function AdminLogin() {
           </CardHeader>
 
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-6" autoComplete="off">
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-garden-brown">
                   Email Administrativo
@@ -151,9 +178,16 @@ export default function AdminLogin() {
               <Button
                 type="submit"
                 className="w-full bg-garden-brown hover:bg-garden-brown/90 text-white py-3"
+                disabled={loading}
+                aria-busy={loading}
               >
-                Aceder ao Painel
+                {loading ? "A autenticar..." : "Aceder ao Painel"}
               </Button>
+            {error && (
+              <div className="text-red-600 text-sm text-center mt-2" role="alert">
+                {error}
+              </div>
+            )}
             </form>
 
             {/* Divider */}

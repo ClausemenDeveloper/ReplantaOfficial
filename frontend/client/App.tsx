@@ -143,20 +143,56 @@ const App = () => (
               {/* OAuth Callback */}
               <Route path="/auth/callback" element={<OAuthCallback />} />
 
-              {/* Dashboard Routes */}
-              <Route path="/dashboard/client" element={<ClientDashboard />} />
-              <Route path="/dashboard/admin" element={<AdminDashboard />} />
+              {/* Dashboard Routes - Protected */}
+              <Route
+                path="/dashboard/client"
+                element={
+                  localStorage.getItem("user") || sessionStorage.getItem("user")
+                    ? <ClientDashboard />
+                    : <Login />
+                }
+              />
+              <Route
+                path="/dashboard/admin"
+                element={
+                  localStorage.getItem("user") || sessionStorage.getItem("user")
+                    ? <AdminDashboard />
+                    : <Login />
+                }
+              />
               <Route
                 path="/dashboard/collaborator"
-                element={<CollaboratorDashboard />}
+                element={
+                  localStorage.getItem("user") || sessionStorage.getItem("user")
+                    ? <CollaboratorDashboard />
+                    : <Login />
+                }
               />
 
-              {/* Legacy Dashboard Routes */}
-              <Route path="/client/dashboard" element={<ClientDashboard />} />
-              <Route path="/admin/dashboard" element={<AdminDashboard />} />
+              {/* Legacy Dashboard Routes - Protected */}
+              <Route
+                path="/client/dashboard"
+                element={
+                  localStorage.getItem("user") || sessionStorage.getItem("user")
+                    ? <ClientDashboard />
+                    : <Login />
+                }
+              />
+              <Route
+                path="/admin/dashboard"
+                element={
+                  localStorage.getItem("user") || sessionStorage.getItem("user")
+                    ? <AdminDashboard />
+                    : <Login />
+                }
+              />
               <Route
                 path="/collaborator/dashboard"
-                element={<CollaboratorDashboard />}
+                element={
+                  localStorage.getItem("user") || sessionStorage.getItem("user")
+                    ? <CollaboratorDashboard />
+                    : <Login />
+                }
               />
 
               {/* Admin Panel Routes */}

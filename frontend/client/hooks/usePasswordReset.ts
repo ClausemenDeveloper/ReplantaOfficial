@@ -3,7 +3,7 @@ import {
   SecurityValidator,
   SecureHTTP,
   SecureErrorHandler,
-} from "@/lib/security";
+} from "../lib/security";
 
 interface PasswordResetState {
   isLoading: boolean;

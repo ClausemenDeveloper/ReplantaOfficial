@@ -4,12 +4,12 @@ import {
   XSSProtection,
   SecureErrorHandler,
   CSRFProtection,
-} from "@/lib/security";
+} from "../../lib/security";
 import { AlertTriangle, Shield, Eye, EyeOff } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { Input } from "../../components/ui/input";
+import { Label } from "../../components/ui/label";
+import { Button } from "../../components/ui/button";
+import { Textarea } from "../../components/ui/textarea";
 
 interface ValidationRule {
   required?: boolean;
@@ -264,9 +264,10 @@ export default function SecureForm({
 
     try {
       // Add CSRF token to form data
-      const formData = {
+      const csrfToken = CSRFProtection.getToken() ?? "";
+      const formData: Record<string, string> = {
         ...formState.values,
-        _token: CSRFProtection.getToken(),
+        _token: csrfToken,
       };
 
       await onSubmit(formData);

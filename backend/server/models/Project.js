@@ -198,47 +198,55 @@ projectSchema.pre("save", function (next) {
 });
 
 // Métodos do schema
-projectSchema.methods.addCollaborator = function (
-  userId,
-  role = "maintenance",
-) {
-  const existingCollaborator = this.collaborators.find(
-    (collab) => collab.user.toString() === userId.toString(),
-  );
 
-  if (!existingCollaborator) {
+// Adiciona colaborador ao projeto, evitando duplicidade
+projectSchema.methods.addCollaborator = function (userId, role = "maintenance") {
+  if (!userId) return Promise.reject(new Error("userId é obrigatório"));
+  const exists = this.collaborators.some(
+    (collab) => collab.user.toString() === userId.toString()
+  );
+  if (!exists) {
     this.collaborators.push({
       user: userId,
-      role: role,
+      role,
       assignedAt: new Date(),
     });
+    return this.save();
   }
-
-  return this.save();
+  return Promise.resolve(this);
 };
 
+
+// Remove colaborador do projeto
 projectSchema.methods.removeCollaborator = function (userId) {
+  if (!userId) return Promise.reject(new Error("userId é obrigatório"));
   this.collaborators = this.collaborators.filter(
-    (collab) => collab.user.toString() !== userId.toString(),
+    (collab) => collab.user.toString() !== userId.toString()
   );
-
   return this.save();
 };
 
+
+// Adiciona uma tarefa ao projeto
 projectSchema.methods.addTask = function (taskData) {
+  if (!taskData || !taskData.name) return Promise.reject(new Error("Dados da tarefa inválidos"));
   this.tasks.push(taskData);
   return this.save();
 };
 
+
+// Atualiza o status de uma tarefa
 projectSchema.methods.updateTaskStatus = function (taskId, status) {
-  const task = this.tasks.id(taskId);
+  if (!taskId || !status) return Promise.reject(new Error("taskId e status são obrigatórios"));
+  const task = this.tasks.find((t) => t._id && t._id.toString() === taskId.toString());
   if (task) {
     task.status = status;
     if (status === "completed") {
       task.completedAt = new Date();
     }
+    return this.save();
   }
-  return this.save();
+  return Promise.reject(new Error("Tarefa não encontrada"));
 };
 
 // Métodos estáticos

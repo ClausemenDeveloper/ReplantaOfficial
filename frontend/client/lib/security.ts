@@ -120,8 +120,8 @@ export class SecurityValidator {
   // Validate admin code
   static validateAdminCode(code: string): boolean {
     if (!code || typeof code !== "string") return false;
-    // Admin code should be alphanumeric, 8-16 characters
-    const codeRegex = /^[A-Z0-9]{8,16}$/;
+    // Admin code should be alphanumeric, 8-16 characters, case-insensitive
+    const codeRegex = /^[A-Za-z0-9]{8,16}$/;
     return codeRegex.test(code.trim());
   }
 
@@ -307,19 +307,22 @@ export class AuthSecurity {
 
   // Generate device fingerprint
   static getDeviceFingerprint(): string {
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d");
-    ctx?.fillText("fingerprint", 10, 10);
-
-    const fingerprint = [
-      navigator.userAgent,
-      navigator.language,
-      screen.width + "x" + screen.height,
-      new Date().getTimezoneOffset(),
-      canvas.toDataURL(),
-    ].join("|");
-
-    return btoa(fingerprint).substring(0, 32);
+    try {
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      ctx?.fillText("fingerprint", 10, 10);
+      const fingerprint = [
+        navigator.userAgent,
+        navigator.language,
+        screen.width + "x" + screen.height,
+        new Date().getTimezoneOffset(),
+        canvas.toDataURL(),
+      ].join("|");
+      return btoa(fingerprint).substring(0, 32);
+    } catch {
+      // Fallback para browsers sem canvas
+      return btoa(navigator.userAgent + navigator.language).substring(0, 32);
+    }
   }
 }
 
@@ -519,12 +522,3 @@ export function validateInput(input: string, type: string): boolean {
   }
 }
 
-// Export all utilities
-export {
-  SecurityValidator as Validator,
-  XSSProtection as XSS,
-  AuthSecurity as Auth,
-  CSRFProtection as CSRF,
-  SecureHTTP as HTTP,
-  SecureErrorHandler as ErrorHandler,
-};

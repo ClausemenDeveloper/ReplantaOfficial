@@ -6,7 +6,7 @@ import {
   SecurityValidator,
   SecureHTTP,
   SecureErrorHandler,
-} from "@/lib/security";
+} from "../lib/security";
 
 interface User {
   id: string;
@@ -50,6 +50,8 @@ export const useSecureAuth = () => {
 
   // ✅ Initialize authentication state
   useEffect(() => {
+    // Evita dependência desnecessária
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     initializeAuth();
   }, []);
 

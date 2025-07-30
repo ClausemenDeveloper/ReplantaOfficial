@@ -11,11 +11,11 @@ import {
   Mail,
   Smartphone,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
-import type { NotificationTypes } from "@/services/notificationService";
+import { Button } from "../ui/button";
+import { Card } from "../ui/card";
+import { Badge } from "../ui/badge";
+import { cn } from "../../lib/utils";
+import type { NotificationTypes } from "../../services/notificationService";
 
 interface NotificationToastProps {
   notification: NotificationTypes;
@@ -445,9 +445,16 @@ export const toast = {
 };
 
 // Helper function to format timestamps
-function formatTimestamp(timestamp: Date): string {
+function formatTimestamp(timestamp: Date | string): string {
+  let date: Date;
+  if (typeof timestamp === "string") {
+    date = new Date(timestamp);
+    if (isNaN(date.getTime())) return "";
+  } else {
+    date = timestamp;
+  }
   const now = new Date();
-  const diff = now.getTime() - timestamp.getTime();
+  const diff = now.getTime() - date.getTime();
   const minutes = Math.floor(diff / 60000);
 
   if (minutes < 1) return "Agora mesmo";
@@ -456,7 +463,7 @@ function formatTimestamp(timestamp: Date): string {
   const hours = Math.floor(minutes / 60);
   if (hours < 24) return `Há ${hours} hora${hours > 1 ? "s" : ""}`;
 
-  return timestamp.toLocaleTimeString("pt-PT", {
+  return date.toLocaleTimeString("pt-PT", {
     hour: "2-digit",
     minute: "2-digit",
   });

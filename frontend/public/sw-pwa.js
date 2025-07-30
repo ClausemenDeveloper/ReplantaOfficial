@@ -178,7 +178,6 @@ async function cacheFirstImages(request) {
     }
     return response;
   } catch (error) {
-    // Return placeholder image on error
     return new Response(
       `<svg width="200" height="150" xmlns="http://www.w3.org/2000/svg">
         <rect width="100%" height="100%" fill="#f3f4f6"/>

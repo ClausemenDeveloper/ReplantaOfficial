@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Sprout, CheckCircle, AlertCircle, Loader } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
+import { Button } from "../../components/ui/button";
 
 export default function OAuthCallback() {
   const navigate = useNavigate();
@@ -32,24 +32,32 @@ export default function OAuthCallback() {
           return;
         }
 
-        // TODO: Process OAuth callback with backend
-        // const response = await fetch('/api/auth/oauth/callback', {
-        //   method: 'POST',
-        //   headers: { 'Content-Type': 'application/json' },
-        //   body: JSON.stringify({ code, state })
-        // });
+        // Chamada real ao backend para processar OAuth
+        const response = await fetch("/api/auth/oauth/callback", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code, state }),
+        });
+        const result = await response.json();
 
-        // Simulate successful authentication
+        if (!response.ok || !result.data?.token) {
+          setStatus("error");
+          setMessage(result.message || "Falha na autenticação OAuth");
+          return;
+        }
+
+        // Armazena token e dados do usuário
+        localStorage.setItem("auth_token", result.data.token);
+        localStorage.setItem("user", JSON.stringify(result.data.user));
+
+        setStatus("success");
+        setMessage("Autenticação realizada com sucesso!");
+
+        // Redireciona conforme role
         setTimeout(() => {
-          setStatus("success");
-          setMessage("Autenticação realizada com sucesso!");
-
-          // Redirect based on state parameter (role)
-          setTimeout(() => {
-            const role = state || "client";
-            navigate(`/${role}/dashboard`);
-          }, 2000);
-        }, 1500);
+          const userRole = result.data.user?.role || state || "client";
+          navigate(`/${userRole}/dashboard`);
+        }, 2000);
       } catch (error) {
         console.error("OAuth callback error:", error);
         setStatus("error");

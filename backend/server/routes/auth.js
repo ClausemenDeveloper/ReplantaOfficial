@@ -8,14 +8,22 @@ const router = express.Router();
 
 // Middleware para verificar conexão com DB
 const checkDatabaseConnection = async (req, res, next) => {
-  if (!databaseService.isConnectedToDatabase()) {
-    return res.status(503).json({
+  try {
+    if (!databaseService.isConnectedToDatabase()) {
+      return res.status(503).json({
+        success: false,
+        message: "Serviço temporariamente indisponível",
+        error: "Database not connected",
+      });
+    }
+    next();
+  } catch (error) {
+    console.error("Erro ao verificar conexão com DB:", error);
+    return res.status(500).json({
       success: false,
-      message: "Serviço temporariamente indisponível",
-      error: "Database not connected",
+      message: "Erro interno ao verificar conexão com DB",
     });
   }
-  next();
 };
 
 // Validações
@@ -216,24 +224,30 @@ router.post(
 // GET /api/auth/me
 router.get("/me", checkDatabaseConnection, async (req, res) => {
   try {
-    const token = req.headers.authorization?.replace("Bearer ", "");
+    const authHeader = req.headers.authorization;
+    const token = authHeader && authHeader.startsWith("Bearer ") ? authHeader.replace("Bearer ", "") : null;
     if (!token) {
       return res.status(401).json({
         success: false,
         message: "Token não fornecido",
       });
     }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || "secret_key");
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET || "secret_key");
+    } catch (err) {
+      return res.status(401).json({
+        success: false,
+        message: "Token inválido ou expirado",
+      });
+    }
     const user = await User.findById(decoded.userId);
-
     if (!user || !user.isActive) {
       return res.status(401).json({
         success: false,
-        message: "Token inválido",
+        message: "Token inválido ou usuário inativo",
       });
     }
-
     res.json({
       success: true,
       data: {
@@ -242,9 +256,9 @@ router.get("/me", checkDatabaseConnection, async (req, res) => {
     });
   } catch (error) {
     console.error("Erro na verificação do token:", error);
-    res.status(401).json({
+    res.status(500).json({
       success: false,
-      message: "Token inválido",
+      message: "Erro interno do servidor",
     });
   }
 });

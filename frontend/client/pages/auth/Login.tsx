@@ -1,15 +1,15 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { useForm } from "react-hook-form";
+import { useForm } from "react-hook-form"; // Correção no import
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
+import { Button } from "../../components/ui/button";
+import { Input } from "../../components/ui/input";
+import { Label } from "../../components/ui/label";
+import { Alert, AlertDescription } from "../../components/ui/alert";
 import { Loader2, TreePine, Lock, Mail } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "../../lib/utils";
 
 // Validation schema
 const loginSchema = z.object({
@@ -27,6 +27,7 @@ export default function Login() {
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
@@ -50,7 +51,6 @@ export default function Login() {
       });
 
       const result = await response.json();
-
       if (!response.ok) {
         throw new Error(result.message || "Erro ao fazer login");
       }
@@ -75,22 +75,23 @@ export default function Login() {
             break;
         }
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       // Mostrar mensagens específicas baseadas no tipo de erro
-      if (err.message.includes("aprovação")) {
+      const errorMessage = err instanceof Error ? err.message : "Erro interno do servidor";
+      if (errorMessage.includes("aprovação")) {
         setError(
-          "⏳ A sua conta está aguardando aprovação do administrador. Será notificado quando aprovada.",
+          "⏳ A sua conta está aguardando aprovação do administrador. Será notificado quando aprovada."
         );
-      } else if (err.message.includes("rejeitada")) {
+      } else if (errorMessage.includes("rejeitada")) {
         setError(
-          "❌ A sua conta foi rejeitada pelo administrador. Contacte-nos para mais informações.",
+          "❌ A sua conta foi rejeitada pelo administrador. Contacte-nos para mais informações."
         );
-      } else if (err.message.includes("Acesso negado")) {
+      } else if (errorMessage.includes("Acesso negado")) {
         setError(
-          "🔒 Acesso negado. Verifique as suas credenciais ou contacte o administrador.",
+          "🔒 Acesso negado. Verifique as suas credenciais ou contacte o administrador."
         );
       } else {
-        setError(err.message || "Erro interno do servidor");
+        setError(errorMessage);
       }
     } finally {
       setIsLoading(false);
@@ -99,15 +100,8 @@ export default function Login() {
 
   // Pre-fill admin credentials for demonstration
   const fillAdminCredentials = () => {
-    const emailInput = document.getElementById("email") as HTMLInputElement;
-    const passwordInput = document.getElementById(
-      "password",
-    ) as HTMLInputElement;
-
-    if (emailInput && passwordInput) {
-      emailInput.value = "clausemenandredossantos@gmail.com";
-      passwordInput.value = "@Venus0777";
-    }
+    setValue("email", "clausemenandredossantos@gmail.com", { shouldValidate: true });
+    setValue("password", "@Venus0777", { shouldValidate: true });
   };
 
   return (
@@ -126,14 +120,12 @@ export default function Login() {
             </p>
           </div>
         </CardHeader>
-
         <CardContent className="space-y-6">
           {error && (
             <Alert variant="destructive">
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
-
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
@@ -151,7 +143,6 @@ export default function Login() {
                 <p className="text-sm text-red-500">{errors.email.message}</p>
               )}
             </div>
-
             <div className="space-y-2">
               <Label htmlFor="password">Senha</Label>
               <div className="relative">
@@ -165,12 +156,9 @@ export default function Login() {
                 />
               </div>
               {errors.password && (
-                <p className="text-sm text-red-500">
-                  {errors.password.message}
-                </p>
+                <p className="text-sm text-red-500">{errors.password.message}</p>
               )}
             </div>
-
             <Button
               type="submit"
               disabled={isLoading}
@@ -178,14 +166,13 @@ export default function Login() {
             >
               {isLoading ? (
                 <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />A entrar...
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" /> A entrar...
                 </>
               ) : (
                 "Entrar"
               )}
             </Button>
           </form>
-
           {/* Admin quick access for testing */}
           <div className="pt-4 border-t border-gray-200">
             <Button
@@ -198,7 +185,6 @@ export default function Login() {
               Acesso Rápido Admin (Para Teste)
             </Button>
           </div>
-
           <div className="space-y-4 text-center text-sm">
             <Link
               to="/forgot-password"
@@ -206,7 +192,6 @@ export default function Login() {
             >
               Esqueceu a senha?
             </Link>
-
             <div className="text-gray-600">
               Não tem uma conta?{" "}
               <Link

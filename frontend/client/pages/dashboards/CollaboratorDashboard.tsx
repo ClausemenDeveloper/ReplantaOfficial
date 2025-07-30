@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Sprout,
@@ -16,87 +16,55 @@ import {
   Route,
   AlertTriangle,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Button } from "../../components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
+import { Badge } from "../../components/ui/badge";
 import GoogleMapsOptimized, {
   type GardenLocation,
-} from "@/components/GoogleMapsOptimized";
+} from "../../components/GoogleMapsOptimized";
 
 export default function CollaboratorDashboard() {
   const navigate = useNavigate();
-  const [user] = useState({
-    name: "Maria Santos",
-    email: "maria.santos@replantasystem.com",
-    role: "Especialista em Jardinagem",
-  });
+  // Recupera dados do colaborador autenticado do localStorage/sessionStorage
+  const [user, setUser] = useState<{ name: string; email: string; role?: string } | null>(null);
+
+  // Carrega dados do colaborador logado
+  useEffect(() => {
+    const userData = localStorage.getItem("user") || sessionStorage.getItem("user");
+    if (userData) {
+      try {
+        setUser(JSON.parse(userData));
+      } catch {
+        setUser(null);
+      }
+    } else {
+      setUser(null);
+    }
+  }, []);
 
   const handleLogout = () => {
+    localStorage.removeItem("user");
+    sessionStorage.removeItem("user");
     navigate("/select-interface");
   };
 
-  const assignedProjects = [
-    {
-      id: 1,
-      title: "Jardim da Casa Principal",
-      client: "João Silva",
-      status: "Em Progresso",
-      deadline: "2025-01-25",
-      location: "Lisboa",
-      progress: 65,
-      coordinates: { lat: 38.7371, lng: -9.1395 },
-      priority: "high" as const,
-    },
-    {
-      id: 2,
-      title: "Renovação do Pátio",
-      client: "Ana Costa",
-      status: "Aguardando Material",
-      deadline: "2025-02-10",
-      location: "Porto",
-      progress: 30,
-      coordinates: { lat: 38.7223, lng: -9.1393 },
-      priority: "medium" as const,
-    },
-    {
-      id: 3,
-      title: "Horta Comunitária",
-      client: "Câmara Municipal",
-      status: "Agendado",
-      deadline: "2025-02-15",
-      location: "Cascais",
-      progress: 0,
-      coordinates: { lat: 38.7105, lng: -9.42 },
-      priority: "medium" as const,
-    },
-  ];
+  // Carrega projetos atribuídos do backend
+  const [assignedProjects, setAssignedProjects] = useState<any[]>([]);
+  useEffect(() => {
+    if (!user) return;
+    fetch(`/api/collaborator/projects?email=${encodeURIComponent(user.email)}`)
+      .then((res) => res.ok ? res.json() : [])
+      .then((data) => setAssignedProjects(Array.isArray(data) ? data : []));
+  }, [user]);
 
-  const maintenanceTasks = [
-    {
-      id: 1,
-      location: "Parque Eduardo VII",
-      type: "Poda",
-      scheduled: "Hoje 14:00",
-      priority: "high" as const,
-      coordinates: { lat: 38.7292, lng: -9.1531 },
-    },
-    {
-      id: 2,
-      location: "Jardim da Estrela",
-      type: "Rega Automática",
-      scheduled: "Amanhã 09:00",
-      priority: "medium" as const,
-      coordinates: { lat: 38.7155, lng: -9.1604 },
-    },
-    {
-      id: 3,
-      location: "Quinta das Conchas",
-      type: "Tratamento Fitossanitário",
-      scheduled: "15 Jan 10:00",
-      priority: "low" as const,
-      coordinates: { lat: 38.7651, lng: -9.1583 },
-    },
-  ];
+  // Carrega tarefas de manutenção do backend
+  const [maintenanceTasks, setMaintenanceTasks] = useState<any[]>([]);
+  useEffect(() => {
+    if (!user) return;
+    fetch(`/api/collaborator/maintenance?email=${encodeURIComponent(user.email)}`)
+      .then((res) => res.ok ? res.json() : [])
+      .then((data) => setMaintenanceTasks(Array.isArray(data) ? data : []));
+  }, [user]);
 
   // Convert projects and maintenance tasks to map locations
   const mapLocations: GardenLocation[] = useMemo(() => {
@@ -113,7 +81,7 @@ export default function CollaboratorDashboard() {
             : project.status === "Agendado"
               ? ("pending" as const)
               : ("active" as const),
-        assignedTo: user.name,
+        assignedTo: user ? user.name : "",
         priority: project.priority,
         estimatedDuration: "4-6 semanas",
       }),
@@ -127,41 +95,27 @@ export default function CollaboratorDashboard() {
         coordinates: task.coordinates,
         description: `Tipo: ${task.type} | Agendado: ${task.scheduled}`,
         status: "pending" as const,
-        assignedTo: user.name,
+        assignedTo: user ? user.name : "",
         priority: task.priority,
       }),
     );
 
     return [...projectLocations, ...maintenanceLocations];
-  }, [assignedProjects, maintenanceTasks, user.name]);
+  }, [assignedProjects, maintenanceTasks, user]);
 
   const handleLocationSelect = useCallback((location: GardenLocation) => {
     console.log("Collaborator selected location:", location);
     // Could open task details, navigation, check-in, etc.
   }, []);
 
-  const todayTasks = [
-    {
-      time: "09:00",
-      task: "Verificação da irrigação - Jardim da Casa Principal",
-      status: "pending",
-    },
-    {
-      time: "11:30",
-      task: "Reunião com cliente - Ana Costa",
-      status: "completed",
-    },
-    {
-      time: "14:00",
-      task: "Poda - Parque Eduardo VII",
-      status: "pending",
-    },
-    {
-      time: "16:00",
-      task: "Relatório de progresso",
-      status: "pending",
-    },
-  ];
+  // Carrega tarefas do dia do backend
+  const [todayTasks, setTodayTasks] = useState<any[]>([]);
+  useEffect(() => {
+    if (!user) return;
+    fetch(`/api/collaborator/today-tasks?email=${encodeURIComponent(user.email)}`)
+      .then((res) => res.ok ? res.json() : [])
+      .then((data) => setTodayTasks(Array.isArray(data) ? data : []));
+  }, [user]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-garden-green/5">
@@ -188,23 +142,23 @@ export default function CollaboratorDashboard() {
               <Button variant="ghost" size="sm">
                 <Settings className="w-4 h-4" />
               </Button>
-              <div className="flex items-center space-x-2">
-                <div className="text-right">
-                  <p className="text-sm font-medium text-gray-900">
-                    {user.name}
-                  </p>
-                  <p className="text-xs text-gray-600">{user.role}</p>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleLogout}
-                  className="border-garden-green/20 text-garden-green-dark hover:bg-garden-green-dark hover:text-white"
-                >
-                  <LogOut className="w-4 h-4 mr-2" />
-                  Sair
-                </Button>
-              </div>
+          <div className="flex items-center space-x-2">
+            <div className="text-right">
+              <p className="text-sm font-medium text-gray-900">
+                {user ? user.name : "Usuário não identificado"}
+              </p>
+              <p className="text-xs text-gray-600">{user ? user.role : ""}</p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleLogout}
+              className="border-garden-green/20 text-garden-green-dark hover:bg-garden-green-dark hover:text-white"
+            >
+              <LogOut className="w-4 h-4 mr-2" />
+              Sair
+            </Button>
+          </div>
             </div>
           </div>
         </div>
@@ -214,16 +168,25 @@ export default function CollaboratorDashboard() {
       <main className="container mx-auto px-4 py-8">
         {/* Welcome Section */}
         <div className="mb-8">
-          <h2 className="text-2xl font-bold text-garden-green-dark mb-2">
-            Olá, {user.name.split(" ")[0]}! 🌿
-          </h2>
-          <p className="text-gray-600">
-            Hoje você tem{" "}
-            <span className="font-semibold text-garden-green-dark">
-              {todayTasks.filter((task) => task.status === "pending").length}{" "}
-              tarefas pendentes
-            </span>
-          </p>
+          {user ? (
+            <>
+              <h2 className="text-2xl font-bold text-garden-green-dark mb-2">
+                Olá, {user.name.split(" ")[0]}! 🌿
+              </h2>
+              <p className="text-gray-600">
+                Hoje você tem{" "}
+                <span className="font-semibold text-garden-green-dark">
+                  {todayTasks.filter((task) => task.status === "pending").length}{" "}
+                  tarefas pendentes
+                </span>
+              </p>
+            </>
+          ) : (
+            <>
+              <h2 className="text-2xl font-bold text-red-600 mb-2">Usuário não identificado</h2>
+              <p className="text-gray-600">Faça login para acessar sua dashboard.</p>
+            </>
+          )}
         </div>
 
         {/* Quick Stats */}
@@ -288,7 +251,6 @@ export default function CollaboratorDashboard() {
               locations={mapLocations}
               height="400px"
               showControls={true}
-              showFilters={true}
               onLocationSelect={handleLocationSelect}
               userRole="collaborator"
               center={{ lat: 38.7223, lng: -9.1393 }}

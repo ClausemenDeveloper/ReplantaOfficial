@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
+import { Button } from "../../components/ui/button";
+import { Badge } from "../../components/ui/badge";
 import {
   TreePine,
   Clock,
@@ -14,7 +14,14 @@ import {
 } from "lucide-react";
 
 export default function PendingApproval() {
-  const [user, setUser] = useState<any>(null);
+  type UserType = {
+    name: string;
+    email: string;
+    role: "client" | "collaborator" | "admin";
+    approvalStatus: "pending" | "approved" | "rejected";
+    createdAt?: string;
+  };
+  const [user, setUser] = useState<UserType | null>(null);
   const [isChecking, setIsChecking] = useState(false);
   const navigate = useNavigate();
 
@@ -23,57 +30,53 @@ export default function PendingApproval() {
     const savedUser = localStorage.getItem("user");
     if (savedUser) {
       try {
-        const parsedUser = JSON.parse(savedUser);
+        const parsedUser: UserType = JSON.parse(savedUser);
         setUser(parsedUser);
-
         // Se usuário já foi aprovado, redirecionar
         if (parsedUser.approvalStatus === "approved") {
-          const role = parsedUser.role;
-          navigate(`/dashboard/${role}`);
+          navigate(`/dashboard/${parsedUser.role}`);
         }
       } catch (error) {
         console.error("Erro ao analisar dados do usuário:", error);
+        localStorage.removeItem("user");
         navigate("/login");
       }
     } else {
       navigate("/login");
     }
-  }, [navigate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const checkApprovalStatus = async () => {
-    if (!user) return;
-
+    if (!user || isChecking) return;
     setIsChecking(true);
     try {
       const token = localStorage.getItem("auth_token");
       if (!token) {
+        localStorage.removeItem("user");
         navigate("/login");
         return;
       }
-
       const response = await fetch("/api/auth/me", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
-
-      if (response.ok) {
-        const result = await response.json();
-        if (result.data?.user) {
-          const updatedUser = result.data.user;
-          setUser(updatedUser);
-          localStorage.setItem("user", JSON.stringify(updatedUser));
-
-          // Se foi aprovado, redirecionar
-          if (updatedUser.approvalStatus === "approved") {
-            navigate(`/dashboard/${updatedUser.role}`);
-          }
-        }
-      } else {
-        // Token inválido, fazer logout
+      if (!response.ok) {
         localStorage.removeItem("auth_token");
         localStorage.removeItem("user");
         navigate("/login");
+        return;
+      }
+      const result = await response.json();
+      if (result.data?.user) {
+        const updatedUser: UserType = result.data.user;
+        setUser(updatedUser);
+        localStorage.setItem("user", JSON.stringify(updatedUser));
+        // Se foi aprovado, redirecionar
+        if (updatedUser.approvalStatus === "approved") {
+          navigate(`/dashboard/${updatedUser.role}`);
+        }
       }
     } catch (error) {
       console.error("Erro ao verificar status:", error);

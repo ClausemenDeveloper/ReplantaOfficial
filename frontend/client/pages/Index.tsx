@@ -1,15 +1,18 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Leaf, Users, Shield, Sprout, ArrowRight, Star } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "../components/ui/button";
+import { Card, CardContent } from "../components/ui/card";
 
 export default function Index() {
   const navigate = useNavigate();
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
-    setIsVisible(true);
+    const timer = setTimeout(() => {
+      setIsVisible(true);
+    }, 100); // Pequeno atraso para animação suave
+    return () => clearTimeout(timer);
   }, []);
 
   const handleGetStarted = () => {
@@ -18,49 +21,54 @@ export default function Index() {
 
   const features = [
     {
-      icon: <Leaf className="w-8 h-8 text-garden-green" />,
+      icon: <Leaf className="w-8 h-8 text-garden-green" aria-label="Gestão Sustentável" />,
       title: "Gestão Sustentável",
-      description:
-        "Soluções ecológicas para um futuro mais verde e sustentável.",
+      description: "Soluções ecológicas para um futuro mais verde e sustentável.",
     },
     {
-      icon: <Users className="w-8 h-8 text-garden-green" />,
+      icon: <Users className="w-8 h-8 text-garden-green" aria-label="Equipas Especializadas" />,
       title: "Equipas Especializadas",
-      description:
-        "Profissionais qualificados para cada tipo de projeto de jardinagem.",
+      description: "Profissionais qualificados para cada tipo de projeto de jardinagem.",
     },
     {
-      icon: <Shield className="w-8 h-8 text-garden-green" />,
+      icon: <Shield className="w-8 h-8 text-garden-green" aria-label="Serviço de Confiança" />,
       title: "Serviço de Confiança",
       description: "Anos de experiência e centenas de clientes satisfeitos.",
     },
   ];
 
   return (
-    <div className="min-h-screen">
+    <main className="min-h-screen" aria-label="Página inicial ReplantaSystem">
       {/* Hero Section */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-garden-green-light via-garden-light-blue to-garden-green-dark">
+      <section
+        className="relative overflow-hidden bg-gradient-to-br from-garden-green-light via-garden-light-blue to-garden-green-dark"
+        aria-label="Hero"
+      >
         <div className="absolute inset-0 bg-black/10"></div>
-        <div className="relative container mx-auto px-4 py-24">
+        <div className="relative container mx-auto px-4 py-24" role="banner">
           <div
-            className={`text-center text-white transition-all duration-1000 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
+            className={`text-center text-white transition-all duration-1000 ${
+              isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+            }`}
+            aria-live="polite"
           >
             <div className="flex justify-center mb-6">
               <div className="p-4 bg-white/20 rounded-full backdrop-blur-sm">
                 <Sprout className="w-16 h-16 text-white" />
               </div>
             </div>
-
-            <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight">
+            <h1
+              className="text-5xl md:text-7xl font-bold mb-6 leading-tight"
+              tabIndex={0}
+              aria-label="ReplantaSystem"
+            >
               Replanta<span className="text-garden-light-blue">System</span>
             </h1>
-
             <p className="text-xl md:text-2xl mb-8 max-w-3xl mx-auto leading-relaxed">
               A sua plataforma completa para gestão de projetos de jardinagem e
               paisagismo. Conectamos clientes, administradores e colaboradores
               numa experiência única.
             </p>
-
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button
                 onClick={handleGetStarted}
@@ -80,10 +88,10 @@ export default function Index() {
             </div>
           </div>
         </div>
-      </div>
+      </section>
 
       {/* Features Section */}
-      <div className="py-24 bg-white">
+      <section className="py-24 bg-white" aria-label="Recursos">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-garden-green-dark mb-4">
@@ -94,23 +102,31 @@ export default function Index() {
               gerimos projetos de jardinagem.
             </p>
           </div>
-
           <div className="grid md:grid-cols-3 gap-8 mb-16">
             {features.map((feature, index) => (
               <Card
                 key={index}
                 className="garden-card hover:scale-105 transition-transform duration-300"
+                aria-label={feature.title}
               >
                 <CardContent className="p-8 text-center">
                   <div className="flex justify-center mb-4">
-                    <div className="p-3 bg-garden-green-light/10 rounded-full">
+                    <div className="p-3 bg-garden-green-light/10 rounded-full" aria-hidden="true">
                       {feature.icon}
                     </div>
                   </div>
-                  <h3 className="text-xl font-semibold text-garden-green-dark mb-3">
+                  <h3
+                    className="text-xl font-semibold text-garden-green-dark mb-3"
+                    tabIndex={0}
+                    aria-label={feature.title}
+                  >
                     {feature.title}
                   </h3>
-                  <p className="text-gray-600 leading-relaxed">
+                  <p
+                    className="text-gray-600 leading-relaxed"
+                    tabIndex={0}
+                    aria-label={feature.description}
+                  >
                     {feature.description}
                   </p>
                 </CardContent>
@@ -123,15 +139,11 @@ export default function Index() {
             <div className="grid md:grid-cols-3 gap-8 text-center">
               <div>
                 <div className="text-4xl font-bold mb-2">500+</div>
-                <div className="text-garden-light-blue">
-                  Projetos Concluídos
-                </div>
+                <div className="text-garden-light-blue">Projetos Concluídos</div>
               </div>
               <div>
                 <div className="text-4xl font-bold mb-2">150+</div>
-                <div className="text-garden-light-blue">
-                  Clientes Satisfeitos
-                </div>
+                <div className="text-garden-light-blue">Clientes Satisfeitos</div>
               </div>
               <div>
                 <div className="text-4xl font-bold mb-2">98%</div>
@@ -140,10 +152,13 @@ export default function Index() {
             </div>
           </div>
         </div>
-      </div>
+      </section>
 
       {/* CTA Section */}
-      <div className="py-24 bg-gradient-to-r from-garden-green to-garden-green-dark">
+      <section
+        className="py-24 bg-gradient-to-r from-garden-green to-garden-green-dark"
+        aria-label="Chamada para ação"
+      >
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-4xl font-bold text-white mb-6">
             Pronto para transformar o seu projeto?
@@ -163,10 +178,10 @@ export default function Index() {
             </Button>
           </div>
         </div>
-      </div>
+      </section>
 
       {/* Footer */}
-      <footer className="bg-garden-green-dark text-white py-12">
+      <footer className="bg-garden-green-dark text-white py-12" role="contentinfo">
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="flex items-center mb-4 md:mb-0">
@@ -177,18 +192,21 @@ export default function Index() {
               <a
                 href="#"
                 className="hover:text-garden-light-blue transition-colors"
+                aria-label="Política de Privacidade"
               >
                 Política de Privacidade
               </a>
               <a
                 href="#"
                 className="hover:text-garden-light-blue transition-colors"
+                aria-label="Termos de Uso"
               >
                 Termos de Uso
               </a>
               <a
                 href="#"
                 className="hover:text-garden-light-blue transition-colors"
+                aria-label="Contacto"
               >
                 Contacto
               </a>
@@ -199,6 +217,6 @@ export default function Index() {
           </div>
         </div>
       </footer>
-    </div>
+    </main>
   );
 }

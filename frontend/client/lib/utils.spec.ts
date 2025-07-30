@@ -8,16 +8,12 @@ describe("cn function", () => {
 
   it("should handle conditional classes", () => {
     const isActive = true;
-    expect(cn("base-class", isActive && "active-class")).toBe(
-      "base-class active-class",
-    );
+    expect(cn("base-class", isActive && "active-class")).toBe("base-class active-class");
   });
 
   it("should handle false and null conditions", () => {
     const isActive = false;
-    expect(cn("base-class", isActive && "active-class", null)).toBe(
-      "base-class",
-    );
+    expect(cn("base-class", isActive && "active-class", null)).toBe("base-class");
   });
 
   it("should merge tailwind classes properly", () => {
@@ -25,8 +21,14 @@ describe("cn function", () => {
   });
 
   it("should work with object notation", () => {
-    expect(cn("base", { conditional: true, "not-included": false })).toBe(
-      "base conditional",
-    );
+    expect(cn("base", { conditional: true, "not-included": false })).toBe("base conditional");
+  });
+
+  it("should handle array of classes", () => {
+    expect(cn(["a", "b", false, null, undefined])).toBe("a b");
+  });
+
+  it("should handle undefined and empty string", () => {
+    expect(cn(undefined, "", null)).toBe("");
   });
 });

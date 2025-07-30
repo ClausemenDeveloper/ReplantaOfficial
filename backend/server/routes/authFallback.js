@@ -2,6 +2,7 @@ import express from "express";
 import jwt from "jsonwebtoken";
 import { body, validationResult } from "express-validator";
 import memoryStore from "../fallback/memoryStore.js";
+import { Router } from "express";
 
 const router = express.Router();
 
@@ -181,24 +182,30 @@ router.post("/login", loginValidation, async (req, res) => {
 // GET /api/auth/me
 router.get("/me", async (req, res) => {
   try {
-    const token = req.headers.authorization?.replace("Bearer ", "");
+    const authHeader = req.headers.authorization;
+    const token = authHeader && authHeader.startsWith("Bearer ") ? authHeader.replace("Bearer ", "") : null;
     if (!token) {
       return res.status(401).json({
         success: false,
         message: "Token não fornecido",
       });
     }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || "secret_key");
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET || "secret_key");
+    } catch (err) {
+      return res.status(401).json({
+        success: false,
+        message: "Token inválido ou expirado",
+      });
+    }
     const user = await memoryStore.findUserById(decoded.userId);
-
     if (!user || !user.isActive) {
       return res.status(401).json({
         success: false,
-        message: "Token inválido",
+        message: "Token inválido ou usuário inativo",
       });
     }
-
     res.json({
       success: true,
       data: {
@@ -207,9 +214,9 @@ router.get("/me", async (req, res) => {
     });
   } catch (error) {
     console.error("Erro na verificação do token:", error);
-    res.status(401).json({
+    res.status(500).json({
       success: false,
-      message: "Token inválido",
+      message: "Erro interno do servidor",
     });
   }
 });

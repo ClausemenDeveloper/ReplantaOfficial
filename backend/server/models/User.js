@@ -113,6 +113,20 @@ const userSchema = new mongoose.Schema(
   },
 );
 
+/**
+ * @typedef {Object} UserClass
+ * @property {string} name
+ * @property {string} email
+ * @property {string} password
+ * @property {string} role
+ * @property {boolean} emailVerified
+ * @property {boolean} isActive
+ * @property {function(): Promise<void>} save
+ * @property {function({ email: string }): Promise<UserClass|null>} static findOne
+ */
+
+/** @type {typeof UserClass} */
+
 // Índices
 userSchema.index({ email: 1 });
 userSchema.index({ role: 1 });
@@ -222,4 +236,28 @@ userSchema.statics.canLogin = function (email) {
   });
 };
 
-export default mongoose.model("User", userSchema);
+
+/*
+ * ATENÇÃO:
+ * O primeiro administrador deve ser criado manualmente no banco de dados.
+ * Você pode fazer isso diretamente no MongoDB ou criar um script de inicialização separado.
+ * Exemplo de criação manual via MongoDB Shell:
+ * 
+ * db.users.insertOne({
+ *   name: "Administrador",
+ *   email: "admin@exemplo.com",
+ *   password: "<senha-hash-bcrypt>",
+ *   role: "admin",
+ *   emailVerified: true,
+ *   approvalStatus: "approved",
+ *   isActive: true,
+ *   createdAt: new Date(),
+ *   updatedAt: new Date()
+ * })
+ * 
+ * Certifique-se de gerar o hash da senha usando bcryptjs antes de inserir.
+ */
+
+
+const User = mongoose.model("User", userSchema);
+export default User;

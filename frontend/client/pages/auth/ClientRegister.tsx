@@ -12,12 +12,12 @@ import {
   Phone,
   CheckCircle,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import GoogleSignInButton from "@/components/GoogleSignInButton";
-import { authenticateWithBackend } from "@/hooks/useGoogleAuth";
+import { Button } from "../../components/ui/button";
+import { Input } from "../../components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
+import { Label } from "../../components/ui/label";
+import GoogleSignInButton from "../../components/GoogleSignInButton";
+import { authenticateWithBackend } from "../../hooks/useGoogleAuth";
 
 export default function ClientRegister() {
   const navigate = useNavigate();
@@ -36,46 +36,59 @@ export default function ClientRegister() {
     navigate("/client/login");
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     if (formData.password !== formData.confirmPassword) {
-      alert("As palavras-passe não coincidem!");
+      setError("As palavras-passe não coincidem!");
       return;
     }
     if (!formData.acceptTerms) {
-      alert("Deve aceitar os termos e condições!");
+      setError("Deve aceitar os termos e condições!");
       return;
     }
-    console.log("Client registration:", formData);
-    // TODO: Implement registration logic
-    alert("Registo enviado! Aguarde aprovação da administração.");
-    navigate("/client/login");
+    setLoading(true);
+    try {
+      // Chamada ao backend para registro
+      const response = await fetch("/api/auth/client-register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+      const data = await response.json();
+      if (response.ok && data.success) {
+        alert("Registo enviado! Aguarde aprovação da administração.");
+        navigate("/client/login");
+      } else {
+        setError(data.message || "Erro ao registrar. Tente novamente.");
+      }
+    } catch (err) {
+      setError("Erro ao registrar. Tente novamente mais tarde.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleGoogleSuccess = async (googleUser: any) => {
     try {
-      console.log("Google registration successful for client:", googleUser);
-      // Pre-fill form with Google data
-      setFormData({
-        ...formData,
+      setFormData((prev) => ({
+        ...prev,
         name: googleUser.name,
         email: googleUser.email,
-      });
-
-      // Or directly register with Google data
-      // TODO: Implement backend registration
-      // const result = await authenticateWithBackend(googleUser, 'client');
-      // if (result.success) {
-      //   alert('Registo com Google realizado! Aguarde aprovação da administração.');
-      //   navigate('/client/login');
-      // }
+      }));
+      setError(null);
       alert("Dados do Google importados! Complete o registo abaixo.");
     } catch (error) {
+      setError("Erro ao importar dados do Google.");
       console.error("Google registration error:", error);
     }
   };
 
   const handleGoogleError = (error: string) => {
+    setError("Erro ao autenticar com Google: " + error);
     console.error("Google registration error:", error);
   };
 
@@ -148,7 +161,7 @@ export default function ClientRegister() {
               </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4" autoComplete="off">
               <div className="space-y-2">
                 <Label htmlFor="name" className="text-garden-green-dark">
                   Nome Completo
@@ -291,10 +304,20 @@ export default function ClientRegister() {
                 </label>
               </div>
 
-              <Button type="submit" className="w-full garden-button py-3">
+              <Button
+                type="submit"
+                className="w-full garden-button py-3"
+                disabled={loading}
+                aria-busy={loading}
+              >
                 <CheckCircle className="w-4 h-4 mr-2" />
-                Criar Conta
+                {loading ? "A enviar..." : "Criar Conta"}
               </Button>
+            {error && (
+              <div className="text-red-600 text-sm text-center mt-2" role="alert">
+                {error}
+              </div>
+            )}
             </form>
 
             <div className="mt-6 text-center">

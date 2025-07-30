@@ -1,54 +1,37 @@
-import React, { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Bell,
   BellRing,
   Check,
-  X,
   Settings,
-  Mail,
-  Smartphone,
-  Filter,
   MoreVertical,
   Trash2,
-  Archive,
   ExternalLink,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "../ui/button";
+import { Badge } from "../ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "../ui/dropdown-menu";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
-import { Switch } from "@/components/ui/switch";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { cn } from "@/lib/utils";
-import { useNotifications } from "@/services/notificationService";
-// SUGESTÃO: Mover estas funções para um ficheiro de utilitários, ex: @/lib/notificationUtils.ts
-// para evitar duplicação e promover a reutilização.
+} from "../ui/popover";
+import { ScrollArea } from "../ui/scroll-area";
+import { cn } from "../../lib/utils";
+import { useNotifications } from "../../services/notificationService";
 import {
   getNotificationIcon,
   getPriorityColor,
   formatTimestamp,
-} from "@/lib/notificationUtils";
-import type {
-  NotificationTypes,
-  ProjectNotification,
-  MaintenanceNotification,
-  SystemNotification,
-} from "@/services/notificationService";
+} from "../../lib/notificationUtils";
+import type { NotificationTypes } from "../../services/notificationService";
+import NotificationSettings from "./NotificationSettings";
 
 interface NotificationCenterProps {
   userRole: "client" | "admin" | "collaborator";
@@ -84,13 +67,12 @@ export function NotificationCenter({
     if (!notification.read) {
       markAsRead(notification.id);
     }
-
     if (notification.actionUrl) {
-      window.location.href = notification.actionUrl;
+      window.open(notification.actionUrl, "_blank");
     }
-
-    onNotificationClick?.(notification);
-    setIsOpen(false);
+    if (onNotificationClick) {
+      onNotificationClick(notification);
+    }
   };
 
   return (
@@ -101,6 +83,7 @@ export function NotificationCenter({
             variant="ghost"
             size="sm"
             className="relative p-2 hover:bg-garden-green/10"
+            aria-label="Abrir centro de notificações"
           >
             {unreadCount > 0 ? (
               <BellRing className="h-5 w-5 text-garden-green" />
@@ -117,7 +100,6 @@ export function NotificationCenter({
             )}
           </Button>
         </PopoverTrigger>
-
         <PopoverContent
           align="end"
           className="w-96 p-0 shadow-xl border-garden-green/20"
@@ -144,13 +126,13 @@ export function NotificationCenter({
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => setShowSettings(!showSettings)}
+                    onClick={() => setShowSettings((prev) => !prev)}
+                    aria-label="Abrir definições de notificações"
                   >
                     <Settings className="w-4 h-4" />
                   </Button>
                 </div>
               </div>
-
               {/* Filters */}
               <div className="flex space-x-2 mt-3">
                 <Button
@@ -194,7 +176,6 @@ export function NotificationCenter({
                 </Button>
               </div>
             </div>
-
             {/* Settings Panel */}
             <AnimatePresence>
               {showSettings && (
@@ -208,18 +189,22 @@ export function NotificationCenter({
                 </motion.div>
               )}
             </AnimatePresence>
-
             {/* Notifications List */}
             <ScrollArea className="h-96">
               <div className="p-2">
                 <AnimatePresence>
                   {filteredNotifications.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-8 text-gray-500">
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="flex flex-col items-center justify-center py-8 text-gray-500"
+                    >
                       <Bell className="w-12 h-12 mb-2 opacity-50" />
                       <p className="text-sm">Nenhuma notificação</p>
-                    </div>
+                    </motion.div>
                   ) : (
-                    filteredNotifications.map((notification) => (
+                    filteredNotifications.map((notification: NotificationTypes) => (
                       <motion.div
                         key={notification.id}
                         initial={{ opacity: 0, y: 20 }}
@@ -237,25 +222,18 @@ export function NotificationCenter({
                     ))
                   )}
                 </AnimatePresence>
-              </div>
-            </ScrollArea>
-
-            {/* Footer */}
-            {filteredNotifications.length > 0 && (
-              <div className="p-3 border-t border-garden-green/10 text-center">
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="text-garden-green hover:bg-garden-green hover:text-white"
-                  onClick={() => {
-                    // Navigate to full notifications page
-                    window.location.href = `/${userRole}/notifications`;
-                  }}
+                  className="w-full mt-2 text-garden-green"
+                  onClick={() =>
+                    window.location.href = `/${userRole}/notifications`
+                  }
                 >
                   Ver todas as notificações
                 </Button>
               </div>
-            )}
+            </ScrollArea>
           </div>
         </PopoverContent>
       </Popover>
@@ -263,7 +241,6 @@ export function NotificationCenter({
   );
 }
 
-// Individual notification item component
 interface NotificationItemProps {
   notification: NotificationTypes;
   onClick: () => void;
@@ -278,8 +255,6 @@ function NotificationItem({
   onMarkAsRead,
 }: NotificationItemProps) {
   return (
-    // SUGESTÃO: Este componente `NotificationItem` poderia ser movido para o seu próprio ficheiro
-    // (ex: `components/notifications/NotificationItem.tsx`) para melhorar a organização do código.
     <div
       className={cn(
         "p-3 rounded-lg border cursor-pointer transition-all hover:shadow-md group",
@@ -287,23 +262,25 @@ function NotificationItem({
           ? "border-gray-200 bg-white"
           : "border-garden-green/30 bg-garden-green/5",
       )}
+      tabIndex={0}
+      role="button"
+      aria-label={`Notificação: ${notification.title}`}
+      onClick={onClick}
+      onKeyPress={(e) => {
+        if (e.key === "Enter" || e.key === " ") onClick();
+      }}
     >
       <div className="flex items-start space-x-3">
-        {/* Priority indicator */}
         <div
           className={cn(
             "w-2 h-2 rounded-full mt-2",
             getPriorityColor(notification.priority),
           )}
         />
-
-        {/* Notification icon */}
         <div className="mt-1">
           {getNotificationIcon(notification.type, notification.priority)}
         </div>
-
-        {/* Content */}
-        <div className="flex-1 min-w-0" onClick={onClick}>
+        <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between">
             <h4
               className={cn(
@@ -366,122 +343,7 @@ function NotificationItem({
   );
 }
 
-// Notification settings component
 interface NotificationSettingsProps {
-  userRole: string;
+  userRole: "client" | "admin" | "collaborator";
 }
 
-function NotificationSettings({ userRole }: NotificationSettingsProps) {
-  // SUGESTÃO: Este componente `NotificationSettings` também poderia ser movido para o seu próprio ficheiro
-  // (ex: `components/notifications/NotificationSettings.tsx`).
-  const [settings, setSettings] = useState({
-    pushEnabled: true,
-    emailEnabled: true,
-    projectUpdates: true,
-    maintenanceReminders: true,
-    systemAlerts: userRole === "admin",
-    weeklyReports: true,
-    soundEnabled: true,
-  });
-
-  const updateSetting = (key: keyof typeof settings, value: boolean) => {
-    setSettings((prev) => ({ ...prev, [key]: value }));
-    // Save to localStorage or send to backend
-    localStorage.setItem(
-      "notification_settings",
-      JSON.stringify({ ...settings, [key]: value }),
-    );
-  };
-
-  return (
-    <div className="p-4 space-y-4">
-      <h4 className="font-medium text-garden-green-dark">
-        Configura��ões de Notificação
-      </h4>
-
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <Smartphone className="w-4 h-4 text-garden-green" />
-            <span className="text-sm">Notificações Push</span>
-          </div>
-          <Switch
-            checked={settings.pushEnabled}
-            onCheckedChange={(checked) => updateSetting("pushEnabled", checked)}
-          />
-        </div>
-
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <Mail className="w-4 h-4 text-garden-green" />
-            <span className="text-sm">Notificações por Email</span>
-          </div>
-          <Switch
-            checked={settings.emailEnabled}
-            onCheckedChange={(checked) =>
-              updateSetting("emailEnabled", checked)
-            }
-          />
-        </div>
-
-        <Separator />
-
-        <div className="flex items-center justify-between">
-          <span className="text-sm">Atualizações de Projetos</span>
-          <Switch
-            checked={settings.projectUpdates}
-            onCheckedChange={(checked) =>
-              updateSetting("projectUpdates", checked)
-            }
-          />
-        </div>
-
-        {(userRole === "collaborator" || userRole === "admin") && (
-          <div className="flex items-center justify-between">
-            <span className="text-sm">Lembretes de Manutenção</span>
-            <Switch
-              checked={settings.maintenanceReminders}
-              onCheckedChange={(checked) =>
-                updateSetting("maintenanceReminders", checked)
-              }
-            />
-          </div>
-        )}
-
-        {userRole === "admin" && (
-          <div className="flex items-center justify-between">
-            <span className="text-sm">Alertas do Sistema</span>
-            <Switch
-              checked={settings.systemAlerts}
-              onCheckedChange={(checked) =>
-                updateSetting("systemAlerts", checked)
-              }
-            />
-          </div>
-        )}
-
-        <div className="flex items-center justify-between">
-          <span className="text-sm">Relatórios Semanais</span>
-          <Switch
-            checked={settings.weeklyReports}
-            onCheckedChange={(checked) =>
-              updateSetting("weeklyReports", checked)
-            }
-          />
-        </div>
-
-        <div className="flex items-center justify-between">
-          <span className="text-sm">Som das Notificações</span>
-          <Switch
-            checked={settings.soundEnabled}
-            onCheckedChange={(checked) =>
-              updateSetting("soundEnabled", checked)
-            }
-          />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-export default NotificationCenter;

@@ -5,36 +5,59 @@ import memoryStore from "../fallback/memoryStore.js";
 
 const router = express.Router();
 
-// Middleware para autenticação
+// Middleware para autenticação robusta
 const authenticate = async (req, res, next) => {
   try {
-    const token = req.headers.authorization?.replace("Bearer ", "");
+    const authHeader = req.headers.authorization;
+    const token = authHeader && authHeader.startsWith("Bearer ") ? authHeader.replace("Bearer ", "") : null;
     if (!token) {
       return res.status(401).json({
         success: false,
         message: "Token não fornecido",
       });
     }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || "secret_key");
+    if (!process.env.JWT_SECRET) {
+      // Falha crítica: não permitir fallback
+      return res.status(500).json({
+        success: false,
+        message: "JWT_SECRET não está definido no ambiente. Contate o administrador.",
+      });
+    }
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+    } catch (err) {
+      return res.status(401).json({
+        success: false,
+        message: "Token inválido ou expirado",
+      });
+    }
     const user = await memoryStore.findUserById(decoded.userId);
-
     if (!user || !user.isActive) {
       return res.status(401).json({
         success: false,
-        message: "Token inválido",
+        message: "Token inválido ou usuário inativo",
       });
     }
-
     req.user = user;
     next();
   } catch (error) {
-    res.status(401).json({
+    res.status(500).json({
       success: false,
-      message: "Token inválido",
+      message: "Erro interno do servidor",
+      error: error instanceof Error ? error.message : String(error),
     });
   }
 };
+// Middleware global para tratamento de erros
+router.use((err, req, res, next) => {
+  console.error("Erro na rota de usuários (fallback):", err);
+  res.status(err.status || 500).json({
+    success: false,
+    message: err.message || "Erro interno do servidor",
+    error: err instanceof Error ? err.message : String(err),
+  });
+});
 
 // Middleware para verificar se é admin
 const requireAdmin = (req, res, next) => {

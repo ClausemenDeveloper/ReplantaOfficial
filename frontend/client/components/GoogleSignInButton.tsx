@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { useGoogleAuth } from "@/hooks/useGoogleAuth";
+import { useGoogleAuth } from "../hooks/useGoogleAuth";
 
 interface GoogleUser {
   id: string;
@@ -35,24 +35,28 @@ export default function GoogleSignInButton({
   const { isLoaded, renderGoogleButton } = useGoogleAuth();
 
   useEffect(() => {
-    if (isLoaded && buttonRef.current) {
-      // Clear any existing content
-      buttonRef.current.innerHTML = "";
-
-      renderGoogleButton(buttonRef.current, {
+    if (!isLoaded) return;
+    const ref = buttonRef.current;
+    if (!ref) return;
+    // Limpa conteúdo anterior
+    ref.innerHTML = "";
+    try {
+      renderGoogleButton(ref, {
         theme,
         size,
         shape,
         text,
         width,
-        callback: (user) => {
+        callback: (user: GoogleUser | null) => {
           if (user) {
             onSuccess(user);
           } else {
-            onError?.("Failed to authenticate with Google");
+            onError?.("Falha na autenticação com Google");
           }
         },
       });
+    } catch (err) {
+      onError?.("Erro ao renderizar botão Google: " + (err instanceof Error ? err.message : String(err)));
     }
   }, [isLoaded, theme, size, shape, text, width, onSuccess, onError]);
 
@@ -60,15 +64,17 @@ export default function GoogleSignInButton({
     return (
       <div
         className={`flex items-center justify-center border border-gray-300 rounded-lg p-3 ${className}`}
-        style={{ width: width || 300 }}
+        style={{ width }}
+        aria-busy="true"
+        aria-label="A carregar Google"
       >
         <div className="flex items-center space-x-3">
-          <div className="w-5 h-5 border-2 border-gray-300 border-t-garden-green rounded-full animate-spin"></div>
+          <div className="w-5 h-5 border-2 border-gray-300 border-t-garden-green rounded-full animate-spin" aria-hidden="true"></div>
           <span className="text-gray-600">A carregar Google...</span>
         </div>
       </div>
     );
   }
 
-  return <div ref={buttonRef} className={className}></div>;
+  return <div ref={buttonRef} className={className} style={{ width }} aria-label="Botão Google"></div>;
 }

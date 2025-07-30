@@ -19,12 +19,13 @@ export function usePlatform(): PlatformInfo {
     platform: "web",
     isCapacitor: false,
     isPWA: false,
-    orientation: "landscape",
+    orientation: typeof window !== "undefined" && window.innerHeight > window.innerWidth ? "portrait" : "landscape",
     screenSize: "lg",
   });
 
   useEffect(() => {
     const detectPlatform = () => {
+      if (typeof window === "undefined") return;
       const userAgent = navigator.userAgent.toLowerCase();
       const width = window.innerWidth;
       const height = window.innerHeight;
@@ -46,10 +47,15 @@ export function usePlatform(): PlatformInfo {
       const isCapacitor = !!(window as any).Capacitor;
 
       // Detect PWA
-      const isPWA =
-        window.matchMedia("(display-mode: standalone)").matches ||
-        window.matchMedia("(display-mode: fullscreen)").matches ||
-        (window.navigator as any).standalone === true;
+      let isPWA = false;
+      try {
+        isPWA =
+          window.matchMedia("(display-mode: standalone)").matches ||
+          window.matchMedia("(display-mode: fullscreen)").matches ||
+          (window.navigator as any).standalone === true;
+      } catch {
+        isPWA = false;
+      }
 
       // Detect orientation
       const orientation = height > width ? "portrait" : "landscape";
@@ -75,7 +81,7 @@ export function usePlatform(): PlatformInfo {
 
     detectPlatform();
 
-    // Listen for resize events
+    // Listen for resize and orientation events
     window.addEventListener("resize", detectPlatform);
     window.addEventListener("orientationchange", detectPlatform);
 

@@ -1,15 +1,21 @@
-import express from "express";
+import express, { Request, Response, Express, Router } from "express";
 import cors from "cors";
-import { handleDemo } from "./routes/demo.js";
+import mongoose from "mongoose";
 
-// Dynamic imports for MongoDB routes to avoid startup issues
-let databaseService: any = null;
-let authRoutes: any = null;
-let projectRoutes: any = null;
-let notificationRoutes: any = null;
-let userManagementRoutes: any = null;
+// Interface para o serviço de banco de dados
+export interface DatabaseService {
+  connect: () => Promise<void>;
+  healthCheck: () => Promise<{ status: string; message: string }>;
+  getStatus: () => { status: string; message: string };
+}
 
-export function createServer() {
+let databaseService: DatabaseService | null = null;
+let authRoutes: Router | null = null;
+let projectRoutes: Router | null = null;
+let notificationRoutes: Router | null = null;
+let userManagementRoutes: Router | null = null;
+
+export async function createServer(): Promise<Express> {
   const app = express();
 
   // Middleware
@@ -17,15 +23,15 @@ export function createServer() {
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
 
-  // Initialize MongoDB connection
-  initializeMongoDB();
+  // Inicializa o MongoDB antes de configurar as rotas
+  await initializeMongoDB();
 
-  // Basic API routes
-  app.get("/api/ping", (_req, res) => {
+  // Rotas básicas da API
+  app.get("/api/ping", (_req: Request, res: Response) => {
     res.json({ message: "ReplantaSystem API v1.0 - Ready!" });
   });
 
-  app.get("/api/health", async (_req, res) => {
+  app.get("/api/health", async (_req: Request, res: Response) => {
     let dbStatus = "disconnected";
     let dbMessage = "No database connection";
 
@@ -45,7 +51,7 @@ export function createServer() {
         }
       } catch (error) {
         dbStatus = "error";
-        dbMessage = error.message;
+        dbMessage = error instanceof Error ? error.message : "Unknown error";
       }
     }
 
@@ -57,153 +63,138 @@ export function createServer() {
     });
   });
 
-  app.get("/api/demo", handleDemo);
-
-  // MongoDB routes (loaded dynamically)
-  app.use("/api/auth", (req, res, next) => {
-    if (authRoutes) {
-      authRoutes(req, res, next);
-    } else {
-      res.status(503).json({
-        success: false,
-        message: "Database not ready",
-      });
-    }
-  });
-
-  app.use("/api/projects", (req, res, next) => {
-    if (projectRoutes) {
-      projectRoutes(req, res, next);
-    } else {
-      res.status(503).json({
-        success: false,
-        message: "Database not ready",
-      });
-    }
-  });
-
-  app.use("/api/notifications", (req, res, next) => {
-    if (notificationRoutes) {
-      notificationRoutes(req, res, next);
-    } else {
-      res.status(503).json({
-        success: false,
-        message: "Database not ready",
-      });
-    }
-  });
-
-  app.use("/api/users", (req, res, next) => {
-    if (userManagementRoutes) {
-      userManagementRoutes(req, res, next);
-    } else {
-      res.status(503).json({
-        success: false,
-        message: "Database not ready",
-      });
-    }
-  });
+  // Rotas do MongoDB com middleware
+  if (authRoutes) app.use("/api/auth", authRoutes);
+  if (projectRoutes) app.use("/api/projects", projectRoutes);
+  if (notificationRoutes) app.use("/api/notifications", notificationRoutes);
+  if (userManagementRoutes) app.use("/api/users", userManagementRoutes);
 
   return app;
 }
 
-async function initializeMongoDB() {
+async function initializeMongoDB(): Promise<void> {
   try {
-    // Dynamic import to prevent startup issues
     const { default: db } = await import("./config/database.js");
-    databaseService = db;
+    databaseService = db as DatabaseService;
 
-    // Connect to MongoDB
-    await databaseService.connect();
+    if (!databaseService?.connect) {
+      throw new Error("Database service is not initialized or connect method is undefined");
+    }
+
+    const connectionString = process.env.MONGODB_URI || "mongodb://localhost:27017/replantasystem";
+    console.log("🔄 Conectando ao MongoDB...", connectionString);
+
+    this.connection = await mongoose.connect(connectionString, {
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+      bufferCommands: false,
+      maxPoolSize: 10,
+      minPoolSize: 5,
+      maxIdleTimeMS: 30000,
+    });
+
     console.log("✅ MongoDB connected successfully");
 
-    // Load routes after successful connection
-    const { default: auth } = await import("./routes/auth.js");
-    const { default: projects } = await import("./routes/projects.js");
-    const { default: notifications } = await import(
-      "./routes/notifications.js"
-    );
-    const { default: userManagement } = await import(
-      "./routes/userManagement.js"
-    );
+    // Carrega as rotas
+    const [
+      { default: auth },
+      { default: projects },
+      { default: notifications },
+      { default: userManagement },
+    ] = await Promise.all([
+      import("./routes/auth.js").catch(() => ({ default: null })),
+      import("./routes/projects.js").catch(() => ({ default: null })),
+      import("./routes/notifications.js").catch(() => ({ default: null })),
+      import("./routes/userManagement.js").catch(() => ({ default: null })),
+    ]);
 
-    authRoutes = auth;
-    projectRoutes = projects;
-    notificationRoutes = notifications;
-    userManagementRoutes = userManagement;
+    authRoutes = auth as Router | null;
+    projectRoutes = projects as Router | null;
+    notificationRoutes = notifications as Router | null;
+    userManagementRoutes = userManagement as Router | null;
+
+    if (!authRoutes || !projectRoutes || !notificationRoutes || !userManagementRoutes) {
+      console.warn("⚠️ One or more routes failed to load, using fallback for missing routes");
+    }
 
     console.log("✅ MongoDB routes loaded");
 
-    // Initialize admin user
     await initializeAdminUser();
   } catch (error) {
-    console.error("❌ MongoDB initialization failed:", error.message);
+    console.error("❌ MongoDB initialization failed:", error instanceof Error ? error.message : "Unknown error");
     console.log("🔄 Switching to fallback memory storage...");
-
-    // Use fallback memory storage
     await initializeFallbackStorage();
   }
 }
 
-async function initializeFallbackStorage() {
+async function initializeFallbackStorage(): Promise<void> {
   try {
-    // Load fallback memory store
     const { default: memoryStore } = await import("./fallback/memoryStore.js");
-    databaseService = memoryStore;
+    databaseService = memoryStore as DatabaseService;
 
-    // Load fallback auth routes
-    const { default: fallbackAuth } = await import("./routes/authFallback.js");
-    const { default: fallbackUserManagement } = await import(
-      "./routes/userManagementFallback.js"
-    );
+    const [
+      { default: fallbackAuth },
+      { default: fallbackUserManagement },
+    ] = await Promise.all([
+      import("./routes/authFallback.js").catch(() => ({ default: null })),
+      import("./routes/userManagementFallback.js").catch(() => ({ default: null })),
+    ]);
 
-    authRoutes = fallbackAuth;
-    userManagementRoutes = fallbackUserManagement;
+    authRoutes = fallbackAuth as Router | null;
+    userManagementRoutes = fallbackUserManagement as Router | null;
 
-    // Simple project and notification routes for fallback
-    projectRoutes = (req, res, next) => {
+    // Rotas de fallback para projects e notifications
+    const fallbackRouter = express.Router();
+    fallbackRouter.use((_req, res) => {
       res.json({
         success: false,
-        message: "Projects require MongoDB connection",
+        message: "Endpoint requires MongoDB connection",
       });
-    };
-    notificationRoutes = (req, res, next) => {
-      res.json({
-        success: false,
-        message: "Notifications require MongoDB connection",
-      });
-    };
+    });
+
+    projectRoutes = projectRoutes || fallbackRouter;
+    notificationRoutes = notificationRoutes || fallbackRouter;
 
     console.log("✅ Fallback memory storage initialized");
-    console.log("⚠️  Note: Data will be lost when server restarts");
+    console.log("⚠️ Note: Data will be lost when server restarts");
   } catch (error) {
-    console.error("❌ Failed to initialize fallback storage:", error.message);
+    console.error("❌ Failed to initialize fallback storage:", error instanceof Error ? error.message : "Unknown error");
   }
 }
 
-async function initializeAdminUser() {
+async function initializeAdminUser(): Promise<void> {
   try {
-    const { default: User } = await import("./models/User.js");
+    const { default: User } = await import("./models/User.js").catch(() => ({ default: null }));
+    if (!User) {
+      throw new Error("User model could not be loaded");
+    }
 
-    const adminEmail = "clausemenandredossantos@gmail.com";
-    const existingAdmin = await User.findByEmail(adminEmail);
+    const adminEmail = process.env.ADMIN_EMAIL || "clausemenandredossantos@gmail.com";
+    const adminPassword = process.env.ADMIN_PASSWORD;
+    const adminName = process.env.ADMIN_NAME || "Clausemen André dos Santos";
 
+    if (!adminPassword) {
+      console.error("❌ ADMIN_PASSWORD environment variable is not set");
+      console.error("Please set ADMIN_PASSWORD environment variable for security");
+      return;
+    }
+
+    const existingAdmin = await User.findOne({ email: adminEmail });
     if (!existingAdmin) {
       const admin = new User({
-        name: "Clausemen André dos Santos",
+        name: adminName,
         email: adminEmail,
-        password: "@Venus0777",
+        password: adminPassword,
         role: "admin",
         emailVerified: true,
         isActive: true,
       });
-
       await admin.save();
       console.log("✅ Admin user created successfully");
     } else {
       console.log("✅ Admin user already exists");
     }
   } catch (error) {
-    console.error("❌ Failed to create admin user:", error.message);
+    console.error("❌ Failed to create admin user:", error instanceof Error ? error.message : "Unknown error");
   }
 }

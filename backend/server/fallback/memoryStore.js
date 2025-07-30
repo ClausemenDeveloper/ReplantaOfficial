@@ -1,13 +1,14 @@
 // Sistema de armazenamento temporário em memória para quando MongoDB não estiver disponível
 import bcryptjs from "bcryptjs";
 
+
 class MemoryStore {
   constructor() {
     this.users = new Map();
     this.projects = new Map();
     this.notifications = new Map();
     this.isInitialized = false;
-    this.init();
+    // Não chamar init no construtor, pois é assíncrono
   }
 
   async init() {
@@ -36,6 +37,7 @@ class MemoryStore {
   }
 
   // User methods
+
   async createUser(userData) {
     await this.init();
 
@@ -43,13 +45,18 @@ class MemoryStore {
     const saltRounds = 12;
     const hashedPassword = await bcryptjs.hash(userData.password, saltRounds);
 
+    // Garantir que role seja válido
+    const validRoles = ["admin", "client", "collaborator"];
+    let role = userData.role;
+    if (!validRoles.includes(role)) role = "client";
+
     const user = {
       _id: userId,
       name: userData.name,
       email: userData.email.toLowerCase(),
       password: hashedPassword,
-      role: userData.role || "client",
-      approvalStatus: userData.role === "admin" ? "approved" : "pending",
+      role,
+      approvalStatus: role === "admin" ? "approved" : "pending",
       isActive: true,
       emailVerified: false,
       phone: userData.phone,
@@ -60,10 +67,22 @@ class MemoryStore {
     };
 
     this.users.set(userId, user);
-    console.log(
-      `✅ Usuário criado: ${user.email} (${user.role}) - Status: ${user.approvalStatus}`,
-    );
+    console.log(`✅ Usuário criado: ${user.email} (${user.role}) - Status: ${user.approvalStatus}`);
     return this.getUserPublicProfile(user);
+  }
+  async promoteUserToAdmin(userId, adminId) {
+    await this.init();
+    const user = await this.findUserById(userId);
+    const admin = await this.findUserById(adminId);
+    if (!user || !admin || admin.role !== "admin") return null;
+    if (user.role === "admin") return user;
+    user.role = "admin";
+    user.approvalStatus = "approved";
+    user.approvedBy = adminId;
+    user.approvedAt = new Date();
+    this.users.set(userId, user);
+    console.log(`✅ Usuário promovido a admin: ${user.email} por ${admin.name}`);
+    return user;
   }
 
   async findUserByEmail(email) {
@@ -228,9 +247,16 @@ class MemoryStore {
     };
   }
 
-  // Health check
-  isHealthy() {
-    return true;
+
+  // Health check compatível com interface DatabaseService
+  async healthCheck() {
+    await this.init();
+    return {
+      status: "connected",
+      message: "MemoryStore funcionando (dados temporários)",
+      totalUsers: this.users.size,
+      type: "memory",
+    };
   }
 
   getStatus() {

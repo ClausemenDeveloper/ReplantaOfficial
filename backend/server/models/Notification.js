@@ -112,6 +112,8 @@ notificationSchema.pre("save", function (next) {
 });
 
 // Métodos do schema
+
+// Marca a notificação como lida
 notificationSchema.methods.markAsRead = function () {
   if (this.status !== "read") {
     this.status = "read";
@@ -121,33 +123,45 @@ notificationSchema.methods.markAsRead = function () {
   return Promise.resolve(this);
 };
 
+
+// Marca como enviada por um canal específico
 notificationSchema.methods.markAsSent = function (channel) {
-  if (this.channels[channel]) {
+  if (this.channels && this.channels[channel]) {
     this.channels[channel].sent = true;
     this.channels[channel].sentAt = new Date();
-
     // Atualizar status geral se foi enviado por qualquer canal
     if (this.status === "pending") {
       this.status = "sent";
     }
+    return this.save();
   }
-  return this.save();
+  return Promise.resolve(this);
 };
 
+
+// Marca como entregue
 notificationSchema.methods.markAsDelivered = function () {
-  this.status = "delivered";
-  return this.save();
+  if (this.status !== "delivered") {
+    this.status = "delivered";
+    return this.save();
+  }
+  return Promise.resolve(this);
 };
 
+
+// Marca como falha em um canal específico
 notificationSchema.methods.markAsFailed = function (channel, error) {
-  if (this.channels[channel]) {
+  if (this.channels && this.channels[channel]) {
     this.channels[channel].error = error;
+    this.status = "failed";
+    return this.save();
   }
-  this.status = "failed";
-  return this.save();
+  return Promise.resolve(this);
 };
 
 // Métodos estáticos
+
+// Busca notificações não lidas de um usuário
 notificationSchema.statics.findUnreadByUser = function (userId) {
   return this.find({
     recipient: userId,
@@ -159,6 +173,8 @@ notificationSchema.statics.findUnreadByUser = function (userId) {
     .populate("relatedProject", "name status");
 };
 
+
+// Busca notificações de um usuário
 notificationSchema.statics.findByUser = function (userId, limit = 50) {
   return this.find({
     recipient: userId,
@@ -170,6 +186,8 @@ notificationSchema.statics.findByUser = function (userId, limit = 50) {
     .populate("relatedProject", "name status");
 };
 
+
+// Busca notificações pendentes para envio
 notificationSchema.statics.findPendingToSend = function () {
   return this.find({
     status: "pending",
@@ -182,6 +200,8 @@ notificationSchema.statics.findPendingToSend = function () {
   }).populate("recipient", "preferences email phone");
 };
 
+
+// Cria notificação de projeto
 notificationSchema.statics.createProjectNotification = function (
   recipientId,
   projectId,
@@ -197,10 +217,12 @@ notificationSchema.statics.createProjectNotification = function (
     message,
     data,
     relatedProject: projectId,
-    priority: type.includes("urgent") ? "urgent" : "medium",
+    priority: typeof type === "string" && type.includes("urgent") ? "urgent" : "medium",
   });
 };
 
+
+// Cria notificação de sistema
 notificationSchema.statics.createSystemNotification = function (
   recipientId,
   title,
@@ -216,6 +238,8 @@ notificationSchema.statics.createSystemNotification = function (
   });
 };
 
+
+// Marca todas as notificações como lidas para um usuário
 notificationSchema.statics.markAllAsReadByUser = function (userId) {
   return this.updateMany(
     {

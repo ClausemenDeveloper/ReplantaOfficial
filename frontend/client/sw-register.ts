@@ -80,7 +80,7 @@ function showUpdateNotification(registration: ServiceWorkerRegistration) {
         <div style="opacity: 0.9;">Clique para atualizar</div>
       </div>
       <button 
-        onclick="this.parentElement.parentElement.remove()" 
+        id="close-update-banner"
         style="background: none; border: none; color: white; opacity: 0.7; cursor: pointer; font-size: 18px; padding: 0; margin-left: auto;"
       >×</button>
     </div>
@@ -99,11 +99,21 @@ function showUpdateNotification(registration: ServiceWorkerRegistration) {
     document.head.appendChild(style);
   }
 
-  notification.addEventListener("click", () => {
-    // Skip waiting and reload
+  // Atualizar ao clicar no banner (exceto botão de fechar)
+  notification.addEventListener("click", (e) => {
+    if ((e.target as HTMLElement)?.id === "close-update-banner") return;
     sendMessageToSW({ type: "SKIP_WAITING" });
     window.location.reload();
   });
+
+  // Botão de fechar
+  const closeBtn = notification.querySelector("#close-update-banner");
+  if (closeBtn) {
+    closeBtn.addEventListener("click", (ev) => {
+      ev.stopPropagation();
+      notification.remove();
+    });
+  }
 
   document.body.appendChild(notification);
 

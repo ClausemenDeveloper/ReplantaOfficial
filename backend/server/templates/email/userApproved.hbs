@@ -195,7 +195,7 @@
 
       <h3>🌟 O que pode fazer agora:</h3>
       <ul style="color: #475569; line-height: 1.8;">
-        {{#if (eq userRole "Cliente")}}
+        {{#ifCond userRole "Cliente"}}
           <li><strong>Criar projetos</strong>
             - Solicite novos projetos de jardinagem</li>
           <li><strong>Acompanhar progresso</strong>
@@ -213,7 +213,7 @@
             - Trabalhe em equipa com outros colaboradores</li>
           <li><strong>Planeamento</strong>
             - Use as ferramentas de gestão de tarefas</li>
-        {{/if}}
+        {{/ifCond}}
       </ul>
 
       <div

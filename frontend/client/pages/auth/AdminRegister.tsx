@@ -12,11 +12,11 @@ import {
   Shield,
   AlertTriangle,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import GoogleSignInButton from "@/components/GoogleSignInButton";
+import { Button } from "../../components/ui/button";
+import { Input } from "../../components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
+import { Label } from "../../components/ui/label";
+import GoogleSignInButton from "../../components/GoogleSignInButton";
 
 export default function AdminRegister() {
   const navigate = useNavigate();
@@ -35,38 +35,59 @@ export default function AdminRegister() {
     navigate("/admin/login");
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     if (formData.password !== formData.confirmPassword) {
-      alert("As palavras-passe não coincidem!");
+      setError("As palavras-passe não coincidem!");
       return;
     }
     if (!formData.acceptTerms) {
-      alert("Deve aceitar os termos e condições!");
+      setError("Deve aceitar os termos e condições!");
       return;
     }
-    console.log("Admin registration:", formData);
-    alert("Solicitação de acesso administrativo enviada! Aguarde aprovação.");
-    navigate("/admin/login");
+    setLoading(true);
+    try {
+      // Chamada ao backend para registro admin
+      const response = await fetch("/api/auth/admin-register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+      const data = await response.json();
+      if (response.ok && data.success) {
+        alert("Solicitação de acesso administrativo enviada! Aguarde aprovação.");
+        navigate("/admin/login");
+      } else {
+        setError(data.message || "Erro ao registrar. Tente novamente.");
+      }
+    } catch (err) {
+      setError("Erro ao registrar. Tente novamente mais tarde.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleGoogleSuccess = async (googleUser: any) => {
     try {
-      console.log("Google registration successful for admin:", googleUser);
-      setFormData({
-        ...formData,
+      setFormData((prev) => ({
+        ...prev,
         name: googleUser.name,
         email: googleUser.email,
-      });
-      alert(
-        "Dados do Google importados! Complete o registo com o código administrativo.",
-      );
+      }));
+      setError(null);
+      alert("Dados do Google importados! Complete o registo com o código administrativo.");
     } catch (error) {
+      setError("Erro ao importar dados do Google.");
       console.error("Google registration error:", error);
     }
   };
 
   const handleGoogleError = (error: string) => {
+    setError("Erro ao autenticar com Google: " + error);
     console.error("Google registration error:", error);
   };
 
@@ -151,7 +172,7 @@ export default function AdminRegister() {
               </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4" autoComplete="off">
               <div className="space-y-2">
                 <Label htmlFor="name" className="text-garden-brown">
                   Nome Completo
@@ -288,10 +309,17 @@ export default function AdminRegister() {
               <Button
                 type="submit"
                 className="w-full bg-garden-brown hover:bg-garden-brown/90 text-white py-3"
+                disabled={loading}
+                aria-busy={loading}
               >
                 <Shield className="w-4 h-4 mr-2" />
-                Solicitar Acesso Admin
+                {loading ? "Enviando..." : "Solicitar Acesso Admin"}
               </Button>
+            {error && (
+              <div className="text-red-600 text-sm text-center mt-2" role="alert">
+                {error}
+              </div>
+            )}
             </form>
 
             <div className="mt-6 text-center">

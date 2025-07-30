@@ -14,116 +14,65 @@ import {
   Star,
   TrendingUp,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Button } from "../../components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
+import { Badge } from "../../components/ui/badge";
 import GoogleMapsOptimized, {
   type GardenLocation,
-} from "@/components/GoogleMapsOptimized";
-import { NotificationCenter } from "@/components/notifications/NotificationCenter";
-import { ToastContainer } from "@/components/notifications/NotificationToast";
-import NotificationPermissions from "@/components/notifications/NotificationPermissions";
-import { notificationService } from "@/services/notificationService";
+} from "../../components/GoogleMapsOptimized";
+import { NotificationCenter } from "../../components/notifications/NotificationCenter";
+import { ToastContainer } from "../../components/notifications/NotificationToast";
+import NotificationPermissions from "../../components/notifications/NotificationPermissions";
+import { notificationService } from "../../services/notificationService";
+import RecentActivity from "../../components/notifications/RecentActivity";
 
 export default function ClientDashboard() {
   const navigate = useNavigate();
-  const [user] = useState({
-    name: "João Silva",
-    email: "joao.silva@email.com",
-    avatar: "/api/placeholder/40/40",
-  });
+  const [user, setUser] = useState<{ name: string; email: string; avatar?: string } | null>(null);
+
+  useEffect(() => {
+    const userData = localStorage.getItem("user") || sessionStorage.getItem("user");
+    if (userData) {
+      try {
+        setUser(JSON.parse(userData));
+      } catch {
+        setUser(null);
+      }
+    } else {
+      setUser(null);
+    }
+  }, []);
 
   const [showNotificationSetup, setShowNotificationSetup] = useState(false);
 
+  // Inicializa permissões de notificação
   useEffect(() => {
-    // Initialize notification service and add some demo notifications
-    const initializeNotifications = async () => {
-      // Check if we should show notification setup
-      const permission = Notification.permission;
-      if (permission === "default") {
-        setShowNotificationSetup(true);
-      }
-
-      // Add some demo notifications for the client
-      setTimeout(() => {
-        notificationService.addNotification({
-          title: "Projeto Atualizado",
-          message:
-            "O progresso do 'Jardim da Casa Principal' foi atualizado para 65%",
-          type: "project",
-          priority: "medium",
-          userRole: "client",
-          actionUrl: "/client/dashboard?project=1",
-          actionLabel: "Ver Projeto",
-          projectId: "1",
-          projectName: "Jardim da Casa Principal",
-          status: "progress",
-        });
-      }, 2000);
-
-      setTimeout(() => {
-        notificationService.addNotification({
-          title: "Reunião Agendada",
-          message: "Reunião com Maria Santos marcada para amanhã às 14:00",
-          type: "info",
-          priority: "high",
-          userRole: "client",
-          actionUrl: "/client/dashboard",
-          actionLabel: "Ver Agenda",
-          module: "project",
-        });
-      }, 4000);
-
-      setTimeout(() => {
-        notificationService.addNotification({
-          title: "Orçamento Aprovado",
-          message:
-            "O orçamento para 'Horta Urbana' foi aprovado. O projeto pode prosseguir!",
-          type: "success",
-          priority: "high",
-          userRole: "client",
-          actionUrl: "/client/dashboard?project=2",
-          actionLabel: "Ver Detalhes",
-          module: "project",
-        });
-      }, 6000);
-    };
-
-    initializeNotifications();
+    const permission = Notification.permission;
+    if (permission === "default") {
+      setShowNotificationSetup(true);
+    }
   }, []);
 
   const handleLogout = () => {
+    localStorage.removeItem("user");
+    sessionStorage.removeItem("user");
     navigate("/select-interface");
   };
 
-  const projects = [
-    {
-      id: 1,
-      title: "Jardim da Casa Principal",
-      status: "Em Progresso",
-      progress: 65,
-      collaborator: "Maria Santos",
-      nextMeeting: "2025-01-15",
-      budget: "€2,500",
-      coordinates: { lat: 38.7371, lng: -9.1395 }, // Lisbon area
-    },
-    {
-      id: 2,
-      title: "Horta Urbana",
-      status: "Aguardando Aprovação",
-      progress: 0,
-      collaborator: "Pendente",
-      nextMeeting: "2025-01-20",
-      budget: "€800",
-      coordinates: { lat: 38.7223, lng: -9.1393 }, // Lisbon center
-    },
-  ];
+  // Carrega projetos do cliente do backend
+  const [projects, setProjects] = useState<any[]>([]);
+  useEffect(() => {
+    if (!user) return;
+    fetch(`/api/client/projects?email=${encodeURIComponent(user.email)}`)
+      .then((res) => res.ok ? res.json() : [])
+      .then((data) => setProjects(Array.isArray(data) ? data : []));
+  }, [user]);
 
   // Convert projects to map locations
   const mapLocations: GardenLocation[] = useMemo(
     () =>
       projects.map((project) => ({
-        id: project.id.toString(),
+        id: project.id?.toString() ?? "",
         name: project.title,
         type: "project" as const,
         coordinates: project.coordinates,
@@ -133,17 +82,52 @@ export default function ClientDashboard() {
             ? ("active" as const)
             : ("pending" as const),
         assignedTo:
-          project.collaborator !== "Pendente"
+          project.collaborator && project.collaborator !== "Pendente"
             ? project.collaborator
             : undefined,
-        estimatedDuration: "4-6 semanas",
+        estimatedDuration: project.estimatedDuration || "4-6 semanas",
       })),
     [projects],
   );
 
   const handleLocationSelect = (location: GardenLocation) => {
-    console.log("Selected location:", location);
-    // Here you could open a detailed view, navigate to project details, etc.
+    navigate(`/client/dashboard?project=${location.id}`);
+  };
+
+  // Função para solicitar novo projeto
+  const handleRequestNewProject = async () => {
+    if (!user) return alert("Usuário não identificado. Faça login novamente.");
+    try {
+      const res = await fetch("/api/client/projects/request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: user.email }),
+      });
+      if (!res.ok) throw new Error("Erro ao solicitar novo projeto");
+      // Atualiza lista de projetos após solicitação
+      const updated = await res.json();
+      setProjects(Array.isArray(updated) ? updated : projects);
+      alert("Solicitação enviada com sucesso!");
+    } catch (err) {
+      alert(`Erro: ${(err as Error).message}`);
+    }
+  };
+
+  // Função para agendar reunião
+  const handleScheduleMeeting = async () => {
+    if (!user) return alert("Usuário não identificado. Faça login novamente.");
+    try {
+      const res = await fetch("/api/client/meetings/schedule", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: user.email }),
+      });
+      if (!res.ok) throw new Error("Erro ao agendar reunião");
+      alert("Reunião agendada com sucesso!");
+      // Opcional: atualizar projetos ou agenda do cliente
+    } catch (err) {
+      alert(`Erro: ${(err as Error).message}`);
+    }
   };
 
   return (
@@ -177,9 +161,9 @@ export default function ClientDashboard() {
               <div className="flex items-center space-x-2">
                 <div className="text-right">
                   <p className="text-sm font-medium text-gray-900">
-                    {user.name}
+                    {user ? user.name : "Usuário não identificado"}
                   </p>
-                  <p className="text-xs text-gray-600">{user.email}</p>
+                  <p className="text-xs text-gray-600">{user ? user.email : ""}</p>
                 </div>
                 <Button
                   variant="outline"
@@ -200,17 +184,26 @@ export default function ClientDashboard() {
       <main className="container mx-auto px-4 py-8">
         {/* Welcome Section */}
         <div className="mb-8">
-          <h2 className="text-2xl font-bold text-garden-green-dark mb-2">
-            Bem-vindo, {user.name.split(" ")[0]}! 🌱
-          </h2>
-          <p className="text-gray-600">
-            Acompanhe o progresso dos seus projetos de jardinagem
-          </p>
+          {user ? (
+            <>
+              <h2 className="text-2xl font-bold text-garden-green-dark mb-2">
+                Bem-vindo, {user.name.split(" ")[0]}! 🌱
+              </h2>
+              <p className="text-gray-600">
+                Acompanhe o progresso dos seus projetos de jardinagem
+              </p>
+            </>
+          ) : (
+            <>
+              <h2 className="text-2xl font-bold text-red-600 mb-2">Usuário não identificado</h2>
+              <p className="text-gray-600">Faça login para acessar sua dashboard.</p>
+            </>
+          )}
         </div>
 
         {/* Quick Actions */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <Card className="garden-card cursor-pointer hover:shadow-md transition-shadow">
+          <Card className="garden-card cursor-pointer hover:shadow-md transition-shadow" onClick={handleRequestNewProject}>
             <CardContent className="p-4 text-center">
               <div className="w-12 h-12 bg-garden-green-light/20 rounded-full flex items-center justify-center mx-auto mb-3">
                 <Plus className="w-6 h-6 text-garden-green" />
@@ -222,7 +215,7 @@ export default function ClientDashboard() {
             </CardContent>
           </Card>
 
-          <Card className="garden-card cursor-pointer hover:shadow-md transition-shadow">
+          <Card className="garden-card cursor-pointer hover:shadow-md transition-shadow" onClick={handleScheduleMeeting}>
             <CardContent className="p-4 text-center">
               <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
                 <Calendar className="w-6 h-6 text-blue-600" />
@@ -271,66 +264,71 @@ export default function ClientDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {projects.map((project) => (
-                    <div
-                      key={project.id}
-                      className="p-4 border border-garden-green-light/20 rounded-lg hover:bg-garden-green-light/5 transition-colors"
-                    >
-                      <div className="flex justify-between items-start mb-3">
-                        <div>
-                          <h4 className="font-semibold text-garden-green-dark">
-                            {project.title}
-                          </h4>
-                          <p className="text-sm text-gray-600">
-                            Colaborador: {project.collaborator}
-                          </p>
-                        </div>
-                        <Badge
-                          variant={
-                            project.status === "Em Progresso"
-                              ? "default"
-                              : "secondary"
-                          }
-                          className={
-                            project.status === "Em Progresso"
-                              ? "bg-garden-green text-white"
-                              : ""
-                          }
-                        >
-                          {project.status}
-                        </Badge>
-                      </div>
-
-                      {project.status === "Em Progresso" && (
-                        <div className="mb-3">
-                          <div className="flex justify-between text-sm text-gray-600 mb-1">
-                            <span>Progresso</span>
-                            <span>{project.progress}%</span>
+                  {projects.length === 0 ? (
+                    <p className="text-sm text-gray-500">Nenhum projeto encontrado.</p>
+                  ) : (
+                    projects.map((project) => (
+                      <div
+                        key={project.id}
+                        className="p-4 border border-garden-green-light/20 rounded-lg hover:bg-garden-green-light/5 transition-colors"
+                      >
+                        <div className="flex justify-between items-start mb-3">
+                          <div>
+                            <h4 className="font-semibold text-garden-green-dark">
+                              {project.title || "Projeto sem título"}
+                            </h4>
+                            <p className="text-sm text-gray-600">
+                              Colaborador: {project.collaborator || "Não atribuído"}
+                            </p>
                           </div>
-                          <div className="w-full bg-gray-200 rounded-full h-2">
-                            <div
-                              className="bg-garden-green h-2 rounded-full transition-all duration-300"
-                              style={{ width: `${project.progress}%` }}
-                            ></div>
-                          </div>
+                          <Badge
+                            variant={
+                              project.status === "Em Progresso"
+                                ? "default"
+                                : "secondary"
+                            }
+                            className={
+                              project.status === "Em Progresso"
+                                ? "bg-garden-green text-white"
+                                : ""
+                            }
+                          >
+                            {project.status || "Sem status"}
+                          </Badge>
                         </div>
-                      )}
 
-                      <div className="flex justify-between items-center text-sm">
-                        <span className="text-gray-600">
-                          Próxima reunião: {project.nextMeeting}
-                        </span>
-                        <span className="font-semibold text-garden-green">
-                          {project.budget}
-                        </span>
+                        {project.status === "Em Progresso" && typeof project.progress === "number" && (
+                          <div className="mb-3">
+                            <div className="flex justify-between text-sm text-gray-600 mb-1">
+                              <span>Progresso</span>
+                              <span>{project.progress}%</span>
+                            </div>
+                            <div className="w-full bg-gray-200 rounded-full h-2">
+                              <div
+                                className="bg-garden-green h-2 rounded-full transition-all duration-300"
+                                style={{ width: `${project.progress}%` }}
+                              ></div>
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="flex justify-between items-center text-sm">
+                          <span className="text-gray-600">
+                            Próxima reunião: {project.nextMeeting || "Não agendada"}
+                          </span>
+                          <span className="font-semibold text-garden-green">
+                            {project.budget || "Sem orçamento"}
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
 
                 <Button
                   className="w-full mt-4 bg-garden-green text-white hover:bg-garden-green-dark"
                   variant="default"
+                  onClick={handleRequestNewProject}
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Solicitar Novo Projeto
@@ -345,7 +343,6 @@ export default function ClientDashboard() {
               locations={mapLocations}
               height="400px"
               showControls={true}
-              showFilters={false}
               onLocationSelect={handleLocationSelect}
               userRole="client"
               center={{ lat: 38.7223, lng: -9.1393 }}
@@ -380,33 +377,12 @@ export default function ClientDashboard() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div className="flex items-start space-x-3">
-                  <div className="w-2 h-2 bg-garden-green rounded-full mt-2"></div>
-                  <div>
-                    <p className="text-sm text-gray-900">
-                      Progresso atualizado no projeto "Jardim da Casa Principal"
-                    </p>
-                    <p className="text-xs text-gray-500">Há 2 horas</p>
-                  </div>
-                </div>
-                <div className="flex items-start space-x-3">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
-                  <div>
-                    <p className="text-sm text-gray-900">
-                      Nova mensagem de Maria Santos
-                    </p>
-                    <p className="text-xs text-gray-500">Há 4 horas</p>
-                  </div>
-                </div>
-                <div className="flex items-start space-x-3">
-                  <div className="w-2 h-2 bg-yellow-500 rounded-full mt-2"></div>
-                  <div>
-                    <p className="text-sm text-gray-900">
-                      Orçamento para "Horta Urbana" aguarda aprovação
-                    </p>
-                    <p className="text-xs text-gray-500">Ontem</p>
-                  </div>
-                </div>
+                {/* Carrega atividades recentes do backend */}
+                {user ? (
+                  <RecentActivity userEmail={user.email} />
+                ) : (
+                  <p className="text-sm text-gray-500">Faça login para ver sua atividade recente.</p>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -415,6 +391,10 @@ export default function ClientDashboard() {
 
       {/* Toast Notifications Container */}
       <ToastContainer position="top-right" maxToasts={5} />
+
+      {/* Componente de atividade recente dinâmico */}
+      {/* Deve ser implementado em ../../components/notifications/RecentActivity.tsx */}
+      {/* Exemplo de uso: <RecentActivity userEmail={user.email} /> */}
     </div>
   );
 }

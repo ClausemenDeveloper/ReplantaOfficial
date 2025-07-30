@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState, memo } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { Button } from "../components/ui/button";
+import { Badge } from "../components/ui/badge";
 import { MapPin, Navigation, Search, Loader2, AlertCircle } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "../lib/utils";
 
 // Types for our gardening-specific map features
 interface GardenLocation {
@@ -369,18 +369,16 @@ GoogleMapsOptimized.displayName = "GoogleMapsOptimized";
 // Helper function to create optimized icons
 function createOptimizedIcon(
   type: GardenLocation["type"],
-  status?: GardenLocation["status"],
+  status?: GardenLocation["status"]
 ): string {
-  const colors = {
+  const colors: Record<GardenLocation["type"], string> = {
     project: "#4ade80",
     nursery: "#22c55e",
     supplier: "#86efac",
     maintenance: "#f59e0b",
     client: "#3b82f6",
   };
-
   const color = colors[type];
-
   // Simple, small SVG for better performance
   return `data:image/svg+xml,${encodeURIComponent(`
     <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">

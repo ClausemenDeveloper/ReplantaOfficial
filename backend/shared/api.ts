@@ -1,12 +1,15 @@
-/**
- * Shared code between client and server
- * Useful to share types between client and server
- * and/or small pure JS functions that can be used on both client and server
- */
 
 /**
- * Example response type for /api/demo
+ * Shared code between client and server
+ * Useful to share types and pure functions between client and server
+ *
  */
-export interface DemoResponse {
-  message: string;
+
+
+export interface SharedUser {
+  id: string;
+  name: string;
+  email: string;
+  role: "admin" | "client" | "collaborator";
 }
+

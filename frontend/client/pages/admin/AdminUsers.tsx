@@ -5,13 +5,10 @@ import {
   ArrowLeft,
   Users,
   Search,
-  Filter,
   UserCheck,
   UserX,
-  Mail,
   Calendar,
   MoreHorizontal,
-  Eye,
   Edit,
   Trash2,
   Check,
@@ -24,25 +21,27 @@ import {
   Star,
   Clock,
   Ban,
+  Eye,
+  Mail,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Button } from "../../components/ui/button";
+import { Input } from "../../components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
+import { Badge } from "../../components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "../../components/ui/dropdown-menu";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "../../components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -50,28 +49,25 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+} from "../../components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
-  AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+} from "../../components/ui/alert-dialog";
+import { Label } from "../../components/ui/label";
+import { Textarea } from "../../components/ui/textarea";
 
 export default function AdminUsers() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [filterRole, setFilterRole] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
-  const [selectedUser, setSelectedUser] = useState<any>(null);
   const [editingUser, setEditingUser] = useState<any>(null);
 
   const handleBack = () => {
@@ -80,7 +76,7 @@ export default function AdminUsers() {
 
   const users = [
     {
-      id: 1,
+  // const [editingUser, setEditingUser] = useState<any>(null);
       name: "João Silva",
       email: "joao.silva@email.com",
       phone: "+351 912 345 678",
@@ -237,13 +233,41 @@ export default function AdminUsers() {
     alert("Utilizador eliminado permanentemente!");
   };
 
+  const promoteToAdmin = async (userId: number) => {
+    try {
+      const response = await fetch(`/api/users/${userId}/promote`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("authToken")}`, // Certifique-se de que o token de autenticação está armazenado
+        },
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        alert("Utilizador promovido a administrador com sucesso!");
+        // Atualize a lista de usuários, se necessário
+      } else {
+        alert(data.message || "Erro ao promover o utilizador.");
+      }
+    } catch (error) {
+      console.error("Erro ao promover o utilizador:", error);
+      alert("Ocorreu um erro ao tentar promover o utilizador.");
+    }
+  };
+
   const filteredUsers = users.filter((user) => {
     const matchesSearch =
       user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.email.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesRole = filterRole === "all" || user.role === filterRole;
+
+    const matchesRole =
+      filterRole === "all" || user.role === filterRole;
+
     const matchesStatus =
       filterStatus === "all" || user.status === filterStatus;
+
     return matchesSearch && matchesRole && matchesStatus;
   });
 
@@ -274,6 +298,24 @@ export default function AdminUsers() {
     },
   ];
 
+  const [selectedUser, setSelectedUser] = useState<
+    | {
+        id?: number;
+        name: string;
+        email: string;
+        phone: string;
+        role: string;
+        status: string;
+        registeredAt: string;
+        lastLogin: string;
+        projects: number;
+        location: string;
+        notes: string;
+        specialization?: string;
+        experience?: string;
+      }
+    | null
+  >(null);
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-garden-brown/5">
       {/* Header */}
@@ -472,14 +514,16 @@ export default function AdminUsers() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-48">
-                            <DropdownMenuItem
+                            <DropdownMenuItem 
                               onClick={() => setSelectedUser(user)}
+                              aria-label={`Ver detalhes de ${user.name}`}
                             >
                               <Eye className="w-4 h-4 mr-2" />
                               Ver Detalhes
                             </DropdownMenuItem>
-                            <DropdownMenuItem
+                            <DropdownMenuItem 
                               onClick={() => setEditingUser(user)}
+                              aria-label={`Editar ${user.name}`}
                             >
                               <Edit className="w-4 h-4 mr-2" />
                               Editar
@@ -488,15 +532,17 @@ export default function AdminUsers() {
                             {user.status === "Pendente" && (
                               <>
                                 <DropdownMenuItem
-                                  onClick={() => handleApproveUser(user.id)}
+                                  onClick={() => user.id !== undefined && handleApproveUser(user.id)}
                                   className="text-green-600"
+                                  aria-label={`Aprovar ${user.name}`}
                                 >
                                   <Check className="w-4 h-4 mr-2" />
                                   Aprovar
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
-                                  onClick={() => handleRejectUser(user.id)}
+                                  onClick={() => user.id !== undefined && handleRejectUser(user.id)}
                                   className="text-red-600"
+                                  aria-label={`Rejeitar ${user.name}`}
                                 >
                                   <X className="w-4 h-4 mr-2" />
                                   Rejeitar
@@ -505,8 +551,9 @@ export default function AdminUsers() {
                             )}
                             {user.status === "Ativo" && (
                               <DropdownMenuItem
-                                onClick={() => handleDeactivateUser(user.id)}
+                                onClick={() => user.id !== undefined && handleDeactivateUser(user.id)}
                                 className="text-orange-600"
+                                aria-label={`Desativar ${user.name}`}
                               >
                                 <Ban className="w-4 h-4 mr-2" />
                                 Desativar
@@ -514,11 +561,22 @@ export default function AdminUsers() {
                             )}
                             {user.status === "Inativo" && (
                               <DropdownMenuItem
-                                onClick={() => handleActivateUser(user.id)}
+                                onClick={() => user.id !== undefined && handleActivateUser(user.id)}
                                 className="text-green-600"
+                                aria-label={`Ativar ${user.name}`}
                               >
                                 <UserCheck className="w-4 h-4 mr-2" />
                                 Ativar
+                              </DropdownMenuItem>
+                            )}
+                            {user.role === "Colaborador" && (
+                              <DropdownMenuItem
+                                onClick={() => user.id !== undefined && promoteToAdmin(user.id)}
+                                className="text-blue-600"
+                                aria-label={`Promover ${user.name} a Admin`}
+                              >
+                                <Shield className="w-4 h-4 mr-2" />
+                                Promover a Admin
                               </DropdownMenuItem>
                             )}
                             <DropdownMenuSeparator />
@@ -527,12 +585,14 @@ export default function AdminUsers() {
                                 <DropdownMenuItem
                                   onSelect={(e) => e.preventDefault()}
                                   className="text-red-600"
+                                  aria-label={`Eliminar ${user.name}`}
+                                  tabIndex={0}
                                 >
                                   <Trash2 className="w-4 h-4 mr-2" />
                                   Eliminar
                                 </DropdownMenuItem>
                               </AlertDialogTrigger>
-                              <AlertDialogContent>
+                              <DialogContent>
                                 <AlertDialogHeader>
                                   <AlertDialogTitle className="flex items-center">
                                     <AlertTriangle className="w-5 h-5 mr-2 text-red-500" />
@@ -550,13 +610,13 @@ export default function AdminUsers() {
                                     Cancelar
                                   </AlertDialogCancel>
                                   <AlertDialogAction
-                                    onClick={() => handleDeleteUser(user.id)}
+                                    onClick={() => user.id !== undefined && handleDeleteUser(user.id)}
                                     className="bg-red-600 hover:bg-red-700"
                                   >
                                     Eliminar
                                   </AlertDialogAction>
                                 </AlertDialogFooter>
-                              </AlertDialogContent>
+                              </DialogContent>
                             </AlertDialog>
                           </DropdownMenuContent>
                         </DropdownMenu>

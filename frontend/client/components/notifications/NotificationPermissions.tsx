@@ -12,13 +12,13 @@ import {
   AlertTriangle,
   Info,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { notificationService } from "@/services/notificationService";
-import { cn } from "@/lib/utils";
+import { Button } from "../ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { Badge } from "../ui/badge";
+import { Switch } from "../ui/switch";
+import { Alert, AlertDescription } from "../ui/alert";
+import { notificationService } from "../../services/notificationService";
+import { cn } from "../../lib/utils";
 
 interface NotificationPermissionsProps {
   userRole: "client" | "admin" | "collaborator";
@@ -260,15 +260,12 @@ function NotificationSetup({ userRole }: NotificationSetupProps) {
 
   const [testInProgress, setTestInProgress] = useState(false);
 
-  const updateSetting = (
-    key: keyof typeof settings,
-    value: boolean | string,
-  ) => {
-    const newSettings = { ...settings, [key]: value };
-    setSettings(newSettings);
-
-    // Save to localStorage
-    localStorage.setItem("notification_settings", JSON.stringify(newSettings));
+  const updateSetting = <K extends keyof typeof settings>(key: K, value: typeof settings[K]) => {
+    setSettings((prev) => {
+      const updated = { ...prev, [key]: value };
+      localStorage.setItem("notification_settings", JSON.stringify(updated));
+      return updated;
+    });
   };
 
   const sendTestNotification = async () => {

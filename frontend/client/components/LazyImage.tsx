@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, memo } from "react";
-import { cn } from "@/lib/utils";
+import { cn } from "../lib/utils";
 
 interface LazyImageProps {
   src: string;
@@ -29,7 +29,9 @@ const LazyImage = memo(
     const imgRef = useRef<HTMLImageElement>(null);
 
     useEffect(() => {
-      const observer = new IntersectionObserver(
+      const ref = imgRef.current;
+      if (!ref) return;
+      const observer = new window.IntersectionObserver(
         ([entry]) => {
           if (entry.isIntersecting) {
             setInView(true);
@@ -41,11 +43,7 @@ const LazyImage = memo(
           rootMargin: "50px",
         },
       );
-
-      if (imgRef.current) {
-        observer.observe(imgRef.current);
-      }
-
+      observer.observe(ref);
       return () => observer.disconnect();
     }, []);
 
@@ -64,17 +62,20 @@ const LazyImage = memo(
         ref={imgRef}
         className={cn("relative overflow-hidden", className)}
         style={{ width, height }}
+        aria-busy={!loaded && !error}
       >
         {!loaded && !error && (
           <img
             src={placeholder}
-            alt=""
+            alt="Imagem em carregamento"
             className="absolute inset-0 w-full h-full object-cover blur-sm"
             aria-hidden="true"
+            width={width}
+            height={height}
           />
         )}
 
-        {inView && (
+        {inView && !error && (
           <img
             src={src}
             alt={alt}
@@ -92,7 +93,7 @@ const LazyImage = memo(
         )}
 
         {error && (
-          <div className="absolute inset-0 flex items-center justify-center bg-gray-100 text-gray-400">
+          <div className="absolute inset-0 flex items-center justify-center bg-gray-100 text-gray-400" role="alert" aria-label="Erro ao carregar imagem">
             <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
               <path
                 fillRule="evenodd"

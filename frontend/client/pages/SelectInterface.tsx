@@ -11,8 +11,8 @@ import {
   Shield,
   Briefcase,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "../components/ui/button";
+import { Card, CardContent } from "../components/ui/card";
 
 export default function SelectInterface() {
   const navigate = useNavigate();
@@ -81,33 +81,36 @@ export default function SelectInterface() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-garden-green-light/10 via-white to-garden-light-blue/10">
+    <main className="min-h-screen bg-gradient-to-br from-garden-green-light/10 via-white to-garden-light-blue/10" aria-label="Seleção de interface">
       {/* Header */}
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex items-center justify-between mb-8">
+      <header className="container mx-auto px-4 py-8" role="banner">
+        <nav className="flex items-center justify-between mb-8" aria-label="Navegação principal">
           <div className="flex items-center">
             <Button
               variant="ghost"
               onClick={handleGoBack}
               className="mr-4 p-2 hover:bg-garden-green-light/10"
+              aria-label="Voltar para página inicial"
             >
               <ArrowLeft className="w-5 h-5" />
             </Button>
             <div className="flex items-center">
-              <Sprout className="w-8 h-8 text-garden-green mr-3" />
-              <h1 className="text-2xl font-bold text-garden-green-dark">
+              <Sprout className="w-8 h-8 text-garden-green mr-3" aria-label="Logo ReplantaSystem" />
+              <h1 className="text-2xl font-bold text-garden-green-dark" tabIndex={0} aria-label="ReplantaSystem">
                 ReplantaSystem
               </h1>
             </div>
           </div>
-        </div>
+        </nav>
+      </header>
 
-        {/* Main Content */}
+      {/* Main Content */}
+      <section className="container mx-auto px-4" aria-label="Escolha de interface">
         <div className="text-center mb-16">
-          <h2 className="text-5xl font-bold text-garden-green-dark mb-6">
+          <h2 className="text-5xl font-bold text-garden-green-dark mb-6" tabIndex={0} aria-label="Escolha a sua interface">
             Escolha a sua interface
           </h2>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+          <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed" tabIndex={0} aria-label="Descrição interfaces">
             Selecione o tipo de acesso que melhor se adequa ao seu perfil. Cada
             interface foi desenhada especificamente para as suas necessidades.
           </p>
@@ -124,20 +127,23 @@ export default function SelectInterface() {
                   : "border-transparent hover:border-garden-green/30"
               }`}
               onClick={() => handleSelectInterface(interfaceOption.id)}
+              aria-label={`Selecionar interface ${interfaceOption.title}`}
+              tabIndex={0}
             >
               <CardContent className="p-8 text-center h-full flex flex-col">
                 {/* Icon with gradient background */}
                 <div
                   className={`w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br ${interfaceOption.color} flex items-center justify-center text-white shadow-lg`}
+                  aria-hidden="true"
                 >
                   {interfaceOption.icon}
                 </div>
 
                 {/* Title and description */}
-                <h3 className="text-2xl font-bold text-garden-green-dark mb-4">
+                <h3 className="text-2xl font-bold text-garden-green-dark mb-4" tabIndex={0} aria-label={interfaceOption.title}>
                   {interfaceOption.title}
                 </h3>
-                <p className="text-gray-600 mb-6 leading-relaxed flex-grow">
+                <p className="text-gray-600 mb-6 leading-relaxed flex-grow" tabIndex={0} aria-label={interfaceOption.description}>
                   {interfaceOption.description}
                 </p>
 
@@ -145,8 +151,8 @@ export default function SelectInterface() {
                 <div className="mb-8">
                   <ul className="space-y-2 text-sm text-gray-700">
                     {interfaceOption.features.map((feature, index) => (
-                      <li key={index} className="flex items-center">
-                        <CheckCircle className="w-4 h-4 text-garden-green mr-2 flex-shrink-0" />
+                      <li key={index} className="flex items-center" tabIndex={0} aria-label={feature}>
+                        <CheckCircle className="w-4 h-4 text-garden-green mr-2 flex-shrink-0" aria-hidden="true" />
                         {feature}
                       </li>
                     ))}
@@ -164,6 +170,7 @@ export default function SelectInterface() {
                     e.stopPropagation();
                     handleSelectInterface(interfaceOption.id);
                   }}
+                  aria-label={interfaceOption.buttonText}
                 >
                   {interfaceOption.buttonText}
                 </Button>
@@ -173,12 +180,12 @@ export default function SelectInterface() {
         </div>
 
         {/* Additional Info Section */}
-        <div className="bg-white rounded-2xl shadow-lg p-12 mb-16">
+        <section className="bg-white rounded-2xl shadow-lg p-12 mb-16" aria-label="Primeiros passos">
           <div className="text-center mb-12">
-            <h3 className="text-3xl font-bold text-garden-green-dark mb-4">
+            <h3 className="text-3xl font-bold text-garden-green-dark mb-4" tabIndex={0} aria-label="Primeiros passos na plataforma">
               Primeiros passos na plataforma
             </h3>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto" tabIndex={0} aria-label="Descrição primeiros passos">
               Não tem conta ainda? Não se preocupe! O processo é simples e
               rápido.
             </p>
@@ -186,56 +193,57 @@ export default function SelectInterface() {
 
           <div className="grid md:grid-cols-3 gap-8">
             <div className="text-center">
-              <div className="w-16 h-16 bg-garden-green-light/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 bg-garden-green-light/10 rounded-full flex items-center justify-center mx-auto mb-4" aria-hidden="true">
                 <Star className="w-8 h-8 text-garden-green" />
               </div>
-              <h4 className="text-xl font-semibold text-garden-green-dark mb-2">
+              <h4 className="text-xl font-semibold text-garden-green-dark mb-2" tabIndex={0} aria-label="Registe-se">
                 1. Registe-se
               </h4>
-              <p className="text-gray-600">
+              <p className="text-gray-600" tabIndex={0} aria-label="Crie a sua conta de forma gratuita e rápida">
                 Crie a sua conta de forma gratuita e rápida
               </p>
             </div>
 
             <div className="text-center">
-              <div className="w-16 h-16 bg-garden-green-light/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 bg-garden-green-light/10 rounded-full flex items-center justify-center mx-auto mb-4" aria-hidden="true">
                 <Shield className="w-8 h-8 text-garden-green" />
               </div>
-              <h4 className="text-xl font-semibold text-garden-green-dark mb-2">
+              <h4 className="text-xl font-semibold text-garden-green-dark mb-2" tabIndex={0} aria-label="Aprovação">
                 2. Aprovação
               </h4>
-              <p className="text-gray-600">
+              <p className="text-gray-600" tabIndex={0} aria-label="Aguarde a aprovação da administração (rápida e segura)">
                 Aguarde a aprovação da administração (rápida e segura)
               </p>
             </div>
 
             <div className="text-center">
-              <div className="w-16 h-16 bg-garden-green-light/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 bg-garden-green-light/10 rounded-full flex items-center justify-center mx-auto mb-4" aria-hidden="true">
                 <Briefcase className="w-8 h-8 text-garden-green" />
               </div>
-              <h4 className="text-xl font-semibold text-garden-green-dark mb-2">
+              <h4 className="text-xl font-semibold text-garden-green-dark mb-2" tabIndex={0} aria-label="Comece">
                 3. Comece
               </h4>
-              <p className="text-gray-600">
+              <p className="text-gray-600" tabIndex={0} aria-label="Aceda à sua interface e comece a usar todos os recursos">
                 Aceda à sua interface e comece a usar todos os recursos
               </p>
             </div>
           </div>
-        </div>
+        </section>
 
         {/* Help Section */}
-        <div className="text-center">
-          <p className="text-gray-600 mb-4">
+        <section className="text-center" aria-label="Ajuda">
+          <p className="text-gray-600 mb-4" tabIndex={0} aria-label="Tem dúvidas sobre qual interface escolher?">
             Tem dúvidas sobre qual interface escolher?
           </p>
           <Button
             variant="outline"
             className="border-garden-green text-garden-green hover:bg-garden-green hover:text-white"
+            aria-label="Contacte o Suporte"
           >
             Contacte o Suporte
           </Button>
-        </div>
-      </div>
-    </div>
+        </section>
+      </section>
+    </main>
   );
 }

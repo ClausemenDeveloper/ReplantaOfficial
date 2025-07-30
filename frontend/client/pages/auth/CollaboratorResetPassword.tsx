@@ -13,15 +13,15 @@ import {
   Shield,
   Briefcase,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
+import { Button } from "../../components/ui/button";
+import { Input } from "../../components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
+import { Label } from "../../components/ui/label";
 import {
   SecurityValidator,
   SecureHTTP,
   SecureErrorHandler,
-} from "@/lib/security";
+} from "../../lib/security";
 
 export default function CollaboratorResetPassword() {
   const navigate = useNavigate();
@@ -51,45 +51,34 @@ export default function CollaboratorResetPassword() {
 
   const handleRequestSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isLoading) return;
     setError("");
     setMessage("");
 
-    // Validation
+    // Validação de email
     if (!SecurityValidator.validateEmail(requestData.email)) {
       setError("Email inválido");
       return;
     }
 
-    // Check rate limiting
-    if (
-      !SecurityValidator.checkRateLimit("password_reset", 3, 60 * 60 * 1000)
-    ) {
+    // Rate limit
+    if (!SecurityValidator.checkRateLimit("password_reset", 3, 60 * 60 * 1000)) {
       setError("Muitas tentativas. Tente novamente em 1 hora.");
       return;
     }
 
     setIsLoading(true);
-
     try {
       const response = await SecureHTTP.post(
         "/api/auth/collaborator/reset-password-request",
-        {
-          email: SecurityValidator.sanitizeInput(requestData.email),
-        },
+        { email: SecurityValidator.sanitizeInput(requestData.email) }
       );
-
       if (response.ok) {
-        setMessage(
-          "Se o email estiver registado como colaborador, receberá as instruções de reset em breve.",
-        );
-
-        // Log security event
+        setMessage("Se o email estiver registado como colaborador, receberá as instruções de reset em breve.");
         SecureErrorHandler.logSecurityEvent("password_reset_requested", {
           email: requestData.email,
           userType: "collaborator",
         });
-
-        // Clear the form
         setRequestData({ email: "" });
       } else {
         const data = await response.json();
@@ -105,48 +94,39 @@ export default function CollaboratorResetPassword() {
 
   const handleResetSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isLoading) return;
     setError("");
     setMessage("");
 
-    // Validation
-    const passwordValidation = SecurityValidator.validatePassword(
-      resetData.password,
-    );
+    // Validação de senha
+    const passwordValidation = SecurityValidator.validatePassword(resetData.password);
     if (!passwordValidation.isValid) {
       setError(passwordValidation.errors[0]);
       return;
     }
-
     if (resetData.password !== resetData.confirmPassword) {
       setError("As passwords não coincidem");
       return;
     }
-
     if (!resetData.token) {
       setError("Token de reset inválido");
       return;
     }
 
     setIsLoading(true);
-
     try {
       const response = await SecureHTTP.post(
         "/api/auth/collaborator/reset-password-confirm",
         {
           token: resetData.token,
           password: resetData.password,
-        },
+        }
       );
-
       if (response.ok) {
         setMessage("Password alterada com sucesso! Pode agora fazer login.");
-
-        // Log security event
         SecureErrorHandler.logSecurityEvent("password_reset_completed", {
           userType: "collaborator",
         });
-
-        // Redirect to login after 3 seconds
         setTimeout(() => {
           navigate("/collaborator/login");
         }, 3000);

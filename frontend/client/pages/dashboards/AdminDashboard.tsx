@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, memo, useEffect } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Sprout,
@@ -17,262 +17,136 @@ import {
   X,
   MapPin,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Button } from "../../components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
+import { Badge } from "../../components/ui/badge";
 import GoogleMapsOptimized, {
   type GardenLocation,
-} from "@/components/GoogleMapsOptimized";
-import { NotificationCenter } from "@/components/notifications/NotificationCenter";
-import { ToastContainer } from "@/components/notifications/NotificationToast";
-import NotificationPermissions from "@/components/notifications/NotificationPermissions";
-import { notificationService } from "@/services/notificationService";
+} from "../../components/GoogleMapsOptimized";
+import { NotificationCenter } from "../../components/notifications/NotificationCenter";
+import { ToastContainer } from "../../components/notifications/NotificationToast";
+import NotificationPermissions from "../../components/notifications/NotificationPermissions";
+import { notificationService } from "../../services/notificationService";
+import { JSX } from "react/jsx-runtime";
+
+// Simple implementation of React.memo for functional components
+function memo<T extends (...args: any[]) => JSX.Element>(Component: T): T {
+  return Component;
+}
 
 const AdminDashboard = memo(() => {
   const navigate = useNavigate();
-  const [user] = useState({
-    name: "Administrator",
-    email: "admin@replantasystem.com",
-  });
+  // Recupera dados do usuário autenticado do localStorage/sessionStorage
+  const [user, setUser] = useState<{ name: string; email: string; avatar?: string } | null>(null);
+
+  useEffect(() => {
+    const userData = localStorage.getItem("user") || sessionStorage.getItem("user");
+    if (userData) {
+      try {
+        setUser(JSON.parse(userData));
+      } catch {
+        setUser(null);
+      }
+    } else {
+      setUser(null);
+    }
+  }, []);
 
   const [showNotificationSetup, setShowNotificationSetup] = useState(false);
 
   useEffect(() => {
-    // Initialize notification service and add admin-specific notifications
-    const initializeAdminNotifications = async () => {
-      // Check if we should show notification setup
+    // Inicializa notificações reais do backend
+    const fetchAdminNotifications = async () => {
       const permission = Notification.permission;
       if (permission === "default") {
         setShowNotificationSetup(true);
       }
-
-      // Add admin-specific demo notifications
-      setTimeout(() => {
-        notificationService.addNotification({
-          title: "Novo Utilizador Pendente",
-          message:
-            "Pedro Santos candidatou-se a colaborador e aguarda aprovação",
-          type: "info",
-          priority: "medium",
-          userRole: "admin",
-          actionUrl: "/admin/users",
-          actionLabel: "Gerir Utilizadores",
-          module: "user",
+      try {
+        const res = await fetch("/api/admin/notifications", {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
         });
-      }, 1000);
-
-      setTimeout(() => {
-        notificationService.addNotification({
-          title: "Sistema de Backup",
-          message: "Backup automático executado com sucesso",
-          type: "success",
-          priority: "low",
-          userRole: "admin",
-          actionUrl: "/admin/dashboard",
-          actionLabel: "Ver Detalhes",
-          module: "system",
-        });
-      }, 3000);
-
-      setTimeout(() => {
-        notificationService.addNotification({
-          title: "Alta Atividade Detectada",
-          message: "23 utilizadores online simultaneamente - novo recorde!",
-          type: "info",
-          priority: "medium",
-          userRole: "admin",
-          actionUrl: "/admin/dashboard",
-          actionLabel: "Ver Estatísticas",
-          module: "system",
-        });
-      }, 5000);
-
-      setTimeout(() => {
-        notificationService.addNotification({
-          title: "Alerta de Segurança",
-          message: "3 tentativas de login falhadas detectadas no sistema",
-          type: "warning",
-          priority: "high",
-          userRole: "admin",
-          actionUrl: "/admin/security",
-          actionLabel: "Verificar Logs",
-          module: "auth",
-        });
-      }, 7000);
+        if (!res.ok) throw new Error("Erro ao carregar notificações");
+        const notifications = await res.json();
+        if (Array.isArray(notifications)) {
+          notifications.forEach((n) => notificationService.addNotification(n));
+        }
+      } catch (err) {
+        // Pode exibir erro ou fallback
+      }
     };
-
-    initializeAdminNotifications();
+    fetchAdminNotifications();
   }, []);
 
   const handleLogout = useCallback(() => {
+    localStorage.removeItem("user");
+    sessionStorage.removeItem("user");
     navigate("/select-interface");
   }, [navigate]);
 
-  const stats = useMemo(
-    () => [
-      {
-        title: "Utilizadores Totais",
-        value: "247",
-        change: "+12%",
-        icon: <Users className="w-6 h-6" />,
-        color: "text-garden-green",
-        bgColor: "bg-garden-green-light/10",
-      },
-      {
-        title: "Projetos Ativos",
-        value: "89",
-        change: "+8%",
-        icon: <BarChart3 className="w-6 h-6" />,
-        color: "text-garden-light-blue",
-        bgColor: "bg-garden-light-blue/10",
-      },
-      {
-        title: "Pendentes Aprovação",
-        value: "15",
-        change: "+3",
-        icon: <Clock className="w-6 h-6" />,
-        color: "text-garden-brown",
-        bgColor: "bg-garden-brown/10",
-      },
-      {
-        title: "Receita Mensal",
-        value: "€45,320",
-        change: "+15%",
-        icon: <DollarSign className="w-6 h-6" />,
-        color: "text-green-600",
-        bgColor: "bg-green-100",
-      },
-    ],
-    [],
-  );
+  // Carrega estatísticas do backend
+  const [stats, setStats] = useState<any[]>([]);
+  useEffect(() => {
+    fetch("/api/admin/stats")
+      .then((res) => res.ok ? res.json() : [])
+      .then((data) => setStats(Array.isArray(data) ? data : []));
+  }, []);
 
-  const pendingUsers = useMemo(
-    () => [
-      {
-        id: 1,
-        name: "Ana Costa",
-        email: "ana.costa@email.com",
-        role: "Cliente",
-        date: "2025-01-10",
-        type: "Novo Cliente",
-      },
-      {
-        id: 2,
-        name: "Pedro Santos",
-        email: "pedro.santos@email.com",
-        role: "Colaborador",
-        date: "2025-01-09",
-        type: "Candidatura",
-        specialization: "Jardinagem Geral",
-      },
-      {
-        id: 3,
-        name: "Maria Silva",
-        email: "maria.silva@email.com",
-        role: "Cliente",
-        date: "2025-01-08",
-        type: "Novo Cliente",
-      },
-    ],
-    [],
-  );
+  // Carrega usuários pendentes do backend
+  const [pendingUsers, setPendingUsers] = useState<any[]>([]);
+  useEffect(() => {
+    fetch("/api/admin/pending-users")
+      .then((res) => res.ok ? res.json() : [])
+      .then((data) => setPendingUsers(Array.isArray(data) ? data : []));
+  }, []);
 
-  const handleQuickApprove = useCallback((userId: number, userName: string) => {
-    console.log(`Approving user ${userId}: ${userName}`);
-    // TODO: Implement backend call
+const handleQuickApprove = useCallback(async (userId: number, userName: string) => {
+  try {
+    const res = await fetch(`/api/admin/users/${userId}/approve`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ name: userName }),
+    });
+    if (!res.ok) throw new Error("Erro ao aprovar usuário");
     alert(`${userName} foi aprovado com sucesso!`);
-  }, []);
+  } catch (err) {
+    alert(`Erro ao aprovar ${userName}: ${(err as Error).message}`);
+  }
+}, []);
 
-  const handleQuickReject = useCallback((userId: number, userName: string) => {
-    console.log(`Rejecting user ${userId}: ${userName}`);
-    // TODO: Implement backend call
+const handleQuickReject = useCallback(async (userId: number, userName: string) => {
+  try {
+    const res = await fetch(`/api/admin/users/${userId}/reject`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ name: userName }),
+    });
+    if (!res.ok) throw new Error("Erro ao rejeitar usuário");
     alert(`${userName} foi rejeitado.`);
+  } catch (err) {
+    alert(`Erro ao rejeitar ${userName}: ${(err as Error).message}`);
+  }
+}, []);
+
+  // Carrega atividade recente do backend
+  const [recentActivity, setRecentActivity] = useState<any[]>([]);
+  useEffect(() => {
+    fetch("/api/admin/activity")
+      .then((res) => res.ok ? res.json() : [])
+      .then((data) => setRecentActivity(Array.isArray(data) ? data : []));
   }, []);
 
-  const recentActivity = useMemo(
-    () => [
-      {
-        type: "user_approved",
-        message: "Utilizador João Ferreira aprovado",
-        time: "Há 1 hora",
-        icon: <CheckCircle className="w-4 h-4 text-green-500" />,
-      },
-      {
-        type: "project_created",
-        message: "Novo projeto 'Jardim Vertical' criado",
-        time: "Há 2 horas",
-        icon: <TrendingUp className="w-4 h-4 text-garden-green" />,
-      },
-      {
-        type: "system_alert",
-        message: "Sistema de backup executado com sucesso",
-        time: "Há 4 horas",
-        icon: <Shield className="w-4 h-4 text-blue-500" />,
-      },
-    ],
-    [],
-  );
-
-  // Sample admin map data - showing all types of locations
-  const adminMapLocations: GardenLocation[] = useMemo(
-    () => [
-      {
-        id: "1",
-        name: "Jardim Gulbenkian",
-        type: "project",
-        coordinates: { lat: 38.7371, lng: -9.1395 },
-        description: "Projeto de requalificação paisagística",
-        status: "active",
-        assignedTo: "Maria Santos",
-        estimatedDuration: "8 semanas",
-      },
-      {
-        id: "2",
-        name: "Viveiro Central",
-        type: "nursery",
-        coordinates: { lat: 38.7223, lng: -9.1393 },
-        description: "Fornecedor principal de plantas",
-        status: "active",
-      },
-      {
-        id: "3",
-        name: "Cliente Premium - Quinta do Lago",
-        type: "client",
-        coordinates: { lat: 38.7105, lng: -9.13 },
-        description: "Cliente VIP - Projeto de luxo",
-        status: "active",
-        priority: "high",
-      },
-      {
-        id: "4",
-        name: "Manutenção Parque Eduardo VII",
-        type: "maintenance",
-        coordinates: { lat: 38.7292, lng: -9.1531 },
-        description: "Manutenção mensal programada",
-        status: "pending",
-        assignedTo: "João Silva",
-      },
-      {
-        id: "5",
-        name: "Fornecedor de Ferramentas",
-        type: "supplier",
-        coordinates: { lat: 38.75, lng: -9.12 },
-        description: "Equipamentos e ferramentas de jardinagem",
-        status: "active",
-      },
-      {
-        id: "6",
-        name: "Parque das Nações - Horta Urbana",
-        type: "project",
-        coordinates: { lat: 38.7681, lng: -9.0947 },
-        description: "Projeto comunitário de agricultura urbana",
-        status: "pending",
-        assignedTo: "Ana Costa",
-        priority: "medium",
-      },
-    ],
-    [],
-  );
+  // Carrega localizações do mapa do backend
+  const [adminMapLocations, setAdminMapLocations] = useState<GardenLocation[]>([]);
+  useEffect(() => {
+    fetch("/api/admin/map-locations")
+      .then((res) => res.ok ? res.json() : [])
+      .then((data) => setAdminMapLocations(Array.isArray(data) ? data : []));
+  }, []);
 
   const handleLocationSelect = useCallback((location: GardenLocation) => {
     console.log("Admin selected location:", location);
@@ -321,8 +195,8 @@ const AdminDashboard = memo(() => {
                 Admin
               </Badge>
               <div className="text-right">
-                <p className="text-sm font-medium text-gray-900">{user.name}</p>
-                <p className="text-xs text-gray-600">{user.email}</p>
+                <p className="text-sm font-medium text-gray-900">{user ? user.name : "Usuário não identificado"}</p>
+                <p className="text-xs text-gray-600">{user ? user.email : ""}</p>
               </div>
               <Button
                 variant="outline"
@@ -372,7 +246,6 @@ const AdminDashboard = memo(() => {
               locations={adminMapLocations}
               height="400px"
               showControls={true}
-              showFilters={true}
               onLocationSelect={handleLocationSelect}
               onLocationCreate={handleLocationCreate}
               userRole="admin"
@@ -635,6 +508,7 @@ const AdminDashboard = memo(() => {
   );
 });
 
-AdminDashboard.displayName = "AdminDashboard";
+// displayName removido pois não é suportado em funções normais
 
 export default AdminDashboard;
+

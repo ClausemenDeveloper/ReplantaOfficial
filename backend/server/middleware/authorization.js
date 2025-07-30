@@ -4,7 +4,8 @@ import User from "../models/User.js";
 // Middleware para autenticação rigorosa
 export const authenticate = async (req, res, next) => {
   try {
-    const token = req.headers.authorization?.replace("Bearer ", "");
+    const authHeader = req.headers.authorization;
+    const token = authHeader && authHeader.startsWith("Bearer ") ? authHeader.replace("Bearer ", "") : null;
 
     if (!token) {
       return res.status(401).json({
@@ -14,8 +15,30 @@ export const authenticate = async (req, res, next) => {
       });
     }
 
-    // Verificar e decodificar token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || "secret_key");
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET || "secret_key");
+    } catch (err) {
+      if (err.name === "JsonWebTokenError") {
+        return res.status(401).json({
+          success: false,
+          message: "Token inválido",
+          code: "INVALID_TOKEN",
+        });
+      }
+      if (err.name === "TokenExpiredError") {
+        return res.status(401).json({
+          success: false,
+          message: "Token expirado",
+          code: "TOKEN_EXPIRED",
+        });
+      }
+      return res.status(401).json({
+        success: false,
+        message: "Token inválido ou expirado",
+        code: "INVALID_OR_EXPIRED_TOKEN",
+      });
+    }
 
     // Buscar usuário na base de dados
     const user = await User.findById(decoded.userId);
@@ -62,22 +85,6 @@ export const authenticate = async (req, res, next) => {
     req.user = user;
     next();
   } catch (error) {
-    if (error.name === "JsonWebTokenError") {
-      return res.status(401).json({
-        success: false,
-        message: "Token inválido",
-        code: "INVALID_TOKEN",
-      });
-    }
-
-    if (error.name === "TokenExpiredError") {
-      return res.status(401).json({
-        success: false,
-        message: "Token expirado",
-        code: "TOKEN_EXPIRED",
-      });
-    }
-
     console.error("Erro na autenticação:", error);
     return res.status(500).json({
       success: false,
@@ -116,19 +123,13 @@ export const requireRole = (allowedRoles) => {
 };
 
 // Middleware específico para admin
-export const requireAdmin = (req, res, next) => {
-  return requireRole("admin")(req, res, next);
-};
+export const requireAdmin = requireRole("admin");
 
 // Middleware específico para cliente
-export const requireClient = (req, res, next) => {
-  return requireRole("client")(req, res, next);
-};
+export const requireClient = requireRole("client");
 
 // Middleware específico para colaborador
-export const requireCollaborator = (req, res, next) => {
-  return requireRole("collaborator")(req, res, next);
-};
+export const requireCollaborator = requireRole("collaborator");
 
 // Middleware para verificar se é o próprio usuário ou admin
 export const requireOwnerOrAdmin = (userIdParam = "id") => {
@@ -280,6 +281,7 @@ export const requireDatabase = async (req, res, next) => {
   }
 };
 
+// Exportação padronizada
 export default {
   authenticate,
   requireRole,

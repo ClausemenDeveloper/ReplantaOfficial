@@ -1,13 +1,14 @@
 import type { CapacitorConfig } from "@capacitor/cli";
 
+// Configuração principal do Capacitor
 const config: CapacitorConfig = {
   appId: "com.replantasystem.app",
   appName: "ReplantaSystem",
   webDir: "dist/spa",
   server: {
     androidScheme: "https",
-    // Para desenvolvimento local - remover em produção
-    // url: 'http://localhost:8080',
+    // Para desenvolvimento local, descomente a linha abaixo e remova em produção
+    // url: process.env.CAPACITOR_DEV_URL || "http://localhost:8080",
     cleartext: true,
   },
   plugins: {
@@ -36,4 +37,5 @@ const config: CapacitorConfig = {
   },
 };
 
+// Exporta a configuração para uso pelo CLI do Capacitor
 export default config;

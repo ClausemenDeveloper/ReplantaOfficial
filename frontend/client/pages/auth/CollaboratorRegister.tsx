@@ -14,19 +14,19 @@ import {
   Phone,
   MapPin,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { Button } from "../../components/ui/button";
+import { Input } from "../../components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
+import { Label } from "../../components/ui/label";
+import { Textarea } from "../../components/ui/textarea";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import GoogleSignInButton from "@/components/GoogleSignInButton";
+} from "../../components/ui/select";
+import GoogleSignInButton from "../../components/GoogleSignInButton";
 
 export default function CollaboratorRegister() {
   const navigate = useNavigate();
@@ -49,41 +49,59 @@ export default function CollaboratorRegister() {
     navigate("/collaborator/login");
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     if (formData.password !== formData.confirmPassword) {
-      alert("As palavras-passe não coincidem!");
+      setError("As palavras-passe não coincidem!");
       return;
     }
     if (!formData.acceptTerms) {
-      alert("Deve aceitar os termos e condições!");
+      setError("Deve aceitar os termos e condições!");
       return;
     }
-    console.log("Collaborator registration:", formData);
-    alert(
-      "Candidatura enviada! Aguarde aprovação da administração para aceder à plataforma como colaborador.",
-    );
-    navigate("/collaborator/login");
+    setLoading(true);
+    try {
+      // Chamada ao backend para registro
+      const response = await fetch("/api/auth/collaborator-register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+      const data = await response.json();
+      if (response.ok && data.success) {
+        alert("Candidatura enviada! Aguarde aprovação da administração para aceder à plataforma como colaborador.");
+        navigate("/collaborator/login");
+      } else {
+        setError(data.message || "Erro ao registrar. Tente novamente.");
+      }
+    } catch (err) {
+      setError("Erro ao registrar. Tente novamente mais tarde.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleGoogleSuccess = async (googleUser: any) => {
     try {
-      console.log(
-        "Google registration successful for collaborator:",
-        googleUser,
-      );
-      setFormData({
-        ...formData,
+      setFormData((prev) => ({
+        ...prev,
         name: googleUser.name,
         email: googleUser.email,
-      });
+      }));
+      setError(null);
       alert("Dados do Google importados! Complete a candidatura abaixo.");
     } catch (error) {
+      setError("Erro ao importar dados do Google.");
       console.error("Google registration error:", error);
     }
   };
 
   const handleGoogleError = (error: string) => {
+    setError("Erro ao autenticar com Google: " + error);
     console.error("Google registration error:", error);
   };
 
@@ -175,7 +193,7 @@ export default function CollaboratorRegister() {
               </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-6" autoComplete="off">
               {/* Personal Information */}
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -427,10 +445,17 @@ export default function CollaboratorRegister() {
               <Button
                 type="submit"
                 className="w-full bg-garden-green-dark hover:bg-green-800 text-white py-3"
+                disabled={loading}
+                aria-busy={loading}
               >
                 <FileText className="w-4 h-4 mr-2" />
-                Enviar Candidatura
+                {loading ? "A enviar..." : "Enviar Candidatura"}
               </Button>
+            {error && (
+              <div className="text-red-600 text-sm text-center mt-2" role="alert">
+                {error}
+              </div>
+            )}
             </form>
 
             <div className="mt-6 text-center">
