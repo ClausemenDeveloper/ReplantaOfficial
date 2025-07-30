@@ -81,7 +81,7 @@ async function initializeMongoDB(): Promise<void> {
       throw new Error("Database service is not initialized or connect method is undefined");
     }
 
-    const connectionString = process.env.MONGODB_URI || "mongodb://localhost:27017/replantasystem";
+    const connectionString = process.env.MONGODB_URI || "mongodb+srv://ReplantaAdmin:@Replanta0777@cluster0.annxx0a.mongodb.net/";
     console.log("🔄 Conectando ao MongoDB...", connectionString);
 
     this.connection = await mongoose.connect(connectionString, {
@@ -91,6 +91,7 @@ async function initializeMongoDB(): Promise<void> {
       maxPoolSize: 10,
       minPoolSize: 5,
       maxIdleTimeMS: 30000,
+      // Remova useNewUrlParser e useUnifiedTopology
     });
 
     console.log("✅ MongoDB connected successfully");
