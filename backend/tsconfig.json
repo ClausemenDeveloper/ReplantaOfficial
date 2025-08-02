@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "baseUrl": "./",
+    "paths": {
+      "@/*": ["server/client/*"],
+      "backend/*": ["./*"],
+      "shared/*": ["shared/*"]
+    },
+    "esModuleInterop": true,
+    "target": "ES2020",
+    "module": "es2020",
+    "outDir": "./dist",
+    "strict": true,
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true
+  },
+  "include": ["src/**/*", "server/**/*", "shared/**/*"],
+  "exclude": ["node_modules", "dist"]
+}
